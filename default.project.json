@@ -2,41 +2,6 @@
   "name": "Puzzle",
 
   "tree": {
-    "$className": "DataModel",
-
-    "ReplicatedStorage": {
-      "$className": "ReplicatedStorage",
-      "$path": "ReplicatedStorage"
-    },
-
-    "ServerScriptService": {
-      "$className": "ServerScriptService",
-      "$path": "ServerScriptService"
-    },
-
-    "ServerStorage": {
-      "$className": "ServerStorage",
-      "$path": "ServerStorage"
-    },
-
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "$path": "StarterPlayer",
-
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "$path": "StarterPlayer/StarterPlayerScripts"
-      },
-
-      "StarterCharacterScripts": {
-        "$className": "StarterCharacterScripts",
-        "$path": "StarterPlayer/StarterCharacterScripts"
-      }
-    },
-
-    "Workspace": {
-      "$className": "Workspace",
-      "$properties": { }
-    }
+    "$path": "src"
   }
 }

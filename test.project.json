@@ -1,0 +1,15 @@
+{
+  "name": "Puzzle",
+
+  "tree": {
+    "$className": "DataModel",
+
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+
+      "Puzzle": {
+        "$path": "src"
+      }
+    }
+  }
+}
