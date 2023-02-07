@@ -1,0 +1,13 @@
+{
+	"material-icon-theme.folders.associations": {
+		"ReplicatedStorage": "shared",
+		"ServerScriptService": "server",
+		"ServerStorage": "download",
+		"StarterPlayer": "client",
+		"StarterPlayer/StarterCharacterScripts": "scripts",
+		"StarterPlayer/StarterPlayerscripts": "scripts",
+		"Workspace": "environment"
+	},
+
+	"files.eol": "\n",
+}
