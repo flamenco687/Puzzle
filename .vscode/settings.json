@@ -9,5 +9,10 @@
 		"Workspace": "environment"
 	},
 
+	"[lua]": {
+		"editor.defaultFormatter": "JohnnyMorganz.stylua",
+		"editor.formatOnSave": true
+	},
+
 	"files.eol": "\n",
 }
