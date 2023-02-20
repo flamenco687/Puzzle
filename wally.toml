@@ -1,0 +1,20 @@
+[package]
+name = "TODO/puzzle" # Temporary set to "TODO" to prevent accidental publishing. Set to "flamenco687" when ready
+
+description = """
+ECS Library for Roblox. \
+Heavily inspired by matter. \
+GitHub Repository: https://github.com/flamenco687/Puzzle.
+"""
+
+authors = ["flamenco687"]
+
+version = "0.0.2"
+license = "MIT"
+realm = "shared"
+
+exclude = ["**"]
+include = ["src", "src/*", "default.project.json", "wally.toml"]
+registry = "https://github.com/UpliftGames/wally-index"
+
+[dependencies]
