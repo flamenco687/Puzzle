@@ -1,5 +1,5 @@
 [package]
-name = "TODO/puzzle" # Temporary set to "TODO" to prevent accidental publishing. Set to "flamenco687" when ready
+name = "null/puzzle" # Temporary set to "TODO" to prevent accidental publishing. Set to "flamenco687" when ready
 
 description = """
 ECS Library for Roblox. \
@@ -17,4 +17,5 @@ exclude = ["**"]
 include = ["src", "src/*", "default.project.json", "wally.toml"]
 registry = "https://github.com/UpliftGames/wally-index"
 
-[dependencies]
+[dev-dependencies]
+testez = "roblox/testez@0.4.1"
