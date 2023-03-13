@@ -3,11 +3,11 @@
 registry = "test"
 
 [[package]]
-name = "null/puzzle"
-version = "0.0.2"
-dependencies = []
+name = "flamenco687/puzzle"
+version = "0.0.10"
+dependencies = [["t", "osyrisrblx/t@3.0.0"]]
 
 [[package]]
-name = "roblox/testez"
-version = "0.4.1"
+name = "osyrisrblx/t"
+version = "3.0.0"
 dependencies = []
