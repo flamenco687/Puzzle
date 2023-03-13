@@ -1,7 +1,10 @@
 {
 	"material-icon-theme.folders.associations": {
-		"DevPackages": "packages"
+		"tests/testez": "tools"
 	},
 
 	"files.eol": "\n",
+
+	"robloxLsp.workspace.rojoProjectFile": "test",
+	"testez-companion.runTestsOnSave": true,
 }

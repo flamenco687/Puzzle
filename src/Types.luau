@@ -1,3 +1,7 @@
+local t = require(script.Parent.Parent.t)
+
+local Types = {}
+
 export type Dictionary = {
     [string]: any
 }
@@ -11,10 +15,17 @@ export type ComponentInfo<T> = {
 	name: string
 }
 
+Types.ComponentInfo = t.interface({
+	data = t.any,
+	name = t.string
+})
+
 export type ComponentAssociations = {
 	[string]: {
 		[number]: any
 	}
 }
 
-return nil
+Types.ComponentAssociations = t.interface({ [t.string] = t.array(t.any) })
+
+return Types
