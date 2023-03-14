@@ -1,18 +1,10 @@
 {
 	"material-icon-theme.folders.associations": {
-		"ReplicatedStorage": "shared",
-		"ServerScriptService": "server",
-		"ServerStorage": "download",
-		"StarterPlayer": "client",
-		"StarterPlayer/StarterCharacterScripts": "scripts",
-		"StarterPlayer/StarterPlayerscripts": "scripts",
-		"Workspace": "environment"
-	},
-
-	"[lua]": {
-		"editor.defaultFormatter": "JohnnyMorganz.stylua",
-		"editor.formatOnSave": true
+		"tests/testez": "tools"
 	},
 
 	"files.eol": "\n",
+
+	"robloxLsp.workspace.rojoProjectFile": "test",
+	"testez-companion.runTestsOnSave": true,
 }
