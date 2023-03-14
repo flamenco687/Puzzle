@@ -1,3 +1,3 @@
-[submodule "testez"]
-	path = tests/testez
-	url = https://github.com/Roblox/testez/
+[submodule "tests/TestEZ"]
+	path = tests/TestEZ
+	url = https://github.com/flamenco687/TestEZ
