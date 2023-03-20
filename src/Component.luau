@@ -2,27 +2,25 @@
 
 local Types = require(script.Parent.Types)
 
-local Component: _Component = {}
-
-export type Component = typeof(Component.new())
-export type _Component = Component & _Properties
-
+--> Component private properties
 type _Properties = {
 	_name: string
 }
 
-function Component.__call<T>(self: _Component, data: T): Types.ComponentInfo<T>
-	return {data = data, name = self._name}
+local Metatable = {} --> Prevents the class table from containing metamethods
+
+function Metatable.__call<T>(self: _Properties, data: T): Types.ComponentInfo<T>
+	return { data = data, name = self._name }
 end
 
-function Component.__tostring(self: _Component): string
+function Metatable.__tostring(self: _Properties): string
 	return self._name
 end
 
 return function(name: string): <T>(data: T) -> Types.ComponentInfo<T>
-	local self: _Properties = {
+	local self: any = { --> any is being used as the best/only option to match typings with the exported type
 		_name = name,
 	}
 
-	return setmetatable(self, Component)
+	return setmetatable(self, Metatable)
 end

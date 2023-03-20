@@ -1,26 +1,31 @@
 --!strict
 
 local Types = require(script.Parent.Types)
-local Component = require(script.Parent.Component)
 
 local World: _World = {}
 
-type World = Methods --> Public type for World
-type _World = World & _Properties --> Private type for World
+type World = Methods & Properties --> Public type for World
+type _World = World & _Methods & _Properties --> Private type for World
 
 --> World public methods
 type Methods = {
 	Spawn: (self: _World, ... Types.ComponentInfo<any>) -> number,
 	Remove: (self: _World, id: number) -> (),
-	Get: (self: _World, id: number, ... Component.Component?) -> {any} | {[string]: any},
+	Get: (self: _World, id: number, ... Types.Component?) -> {any} | {[string]: any},
 	Set: (self: _World, id: number, ... Types.ComponentInfo<any>) -> ()
 }
+
+--> World private methods
+type _Methods = {}
+
+--> World public properties
+type Properties = {}
 
 --> World private properties
 type _Properties = {
 	_componentAssociations: Types.ComponentAssociations,
 	_nextId: number,
-	_size: number
+	_size: number,
 }
 
 function World:Spawn(...: Types.ComponentInfo<any>): number
@@ -48,11 +53,11 @@ function World:Remove(id: number): ()
 	self._size -= 1
 end
 
-function World:Get(id: number, ...: Component.Component?): {any} | {[string]: any}
+function World:Get(id: number, ...: Types.Component?): {any} | {[string]: any}
 	local components: {[string]: true}? = if #{...} > 0 then {} else nil
 
 	if components then
-		for _, component: Component.Component in {... :: Component.Component} do
+		for _, component: Types.Component in {... :: Types.Component} do
 			components[tostring(component)] = true
 		end
 	end
@@ -81,14 +86,14 @@ function World:Set(id: number, ...: Types.ComponentInfo<any>)
 	end
 end
 
-local Metatable = { __index = World } --> Private table that acts as metatable for World objects
+local Metatable = { __index = World } --> Prevents the main class table from containing metamethods
 
-return function(): World
-	local self: _Properties = {
+return function(): World --> World acts as a public type only exposing relevant methods and properties
+	local self: Properties & _Properties = {
 		_componentAssociations = {},
 		_nextId = 1,
-		_size = 0
+		_size = 1
 	}
 
-	return setmetatable(self, Metatable)
+	return setmetatable(self, Metatable) :: _World --> Although self is exported as World, it matches _World typings
 end

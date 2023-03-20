@@ -28,4 +28,6 @@ export type ComponentAssociations = {
 
 Types.ComponentAssociations = t.interface({ [t.string] = t.array(t.any) })
 
+export type Component = <T>(data: T) -> ComponentInfo<T>
+
 return Types
