@@ -3,13 +3,12 @@
 local Types = require(script.Parent.Types)
 local Component = require(script.Parent.Component)
 
-local World = {}
-World.__index = World
+local World: _World = {}
 
-type World = Methods -- Default type for World
-type _World = World & _Properties -- Private type for World
+type World = Methods --> Public type for World
+type _World = World & _Properties --> Private type for World
 
--- World public methods
+--> World public methods
 type Methods = {
 	Spawn: (self: _World, ... Types.ComponentInfo<any>) -> number,
 	Remove: (self: _World, id: number) -> (),
@@ -17,24 +16,14 @@ type Methods = {
 	Set: (self: _World, id: number, ... Types.ComponentInfo<any>) -> ()
 }
 
--- World private properties
+--> World private properties
 type _Properties = {
 	_componentAssociations: Types.ComponentAssociations,
 	_nextId: number,
 	_size: number
 }
 
-function World.new(): World
-	local self: _Properties = {
-		_componentAssociations = {},
-		_nextId = 1,
-		_size = 0
-	}
-
-	return setmetatable(self, World)
-end
-
-function World.Spawn(self: _World, ...: Types.ComponentInfo<any>): number
+function World:Spawn(...: Types.ComponentInfo<any>): number
 	local componentInfos: {Types.ComponentInfo<any>} = { ... }
 
 	for _, componentInfo in componentInfos do
@@ -51,7 +40,7 @@ function World.Spawn(self: _World, ...: Types.ComponentInfo<any>): number
 	return self._nextId - 1
 end
 
-function World.Remove(self: _World, id: number): ()
+function World:Remove(id: number): ()
 	for component in self._componentAssociations do
 		self._componentAssociations[component][id] = nil
 	end
@@ -59,7 +48,7 @@ function World.Remove(self: _World, id: number): ()
 	self._size -= 1
 end
 
-function World.Get(self: _World, id: number, ...: Component.Component?): {any} | {[string]: any}
+function World:Get(id: number, ...: Component.Component?): {any} | {[string]: any}
 	local components: {[string]: true}? = if #{...} > 0 then {} else nil
 
 	if components then
@@ -84,7 +73,7 @@ function World.Get(self: _World, id: number, ...: Component.Component?): {any} |
 	return if componentsToUnpack then table.unpack(componentsToUnpack) else componentsToReturn
 end
 
-function World.Set(self: _World, id: number, ...: Types.ComponentInfo<any>)
+function World:Set(id: number, ...: Types.ComponentInfo<any>)
 	local components: {Types.ComponentInfo<any>} = {...}
 
 	for _, componentInfo in components do
@@ -92,4 +81,14 @@ function World.Set(self: _World, id: number, ...: Types.ComponentInfo<any>)
 	end
 end
 
-return World :: { new: () -> World } -- The module's table only serves as a constructor
+local Metatable = { __index = World } --> Private table that acts as metatable for World objects
+
+return function(): World
+	local self: _Properties = {
+		_componentAssociations = {},
+		_nextId = 1,
+		_size = 0
+	}
+
+	return setmetatable(self, Metatable)
+end
