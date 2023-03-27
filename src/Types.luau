@@ -10,12 +10,12 @@ export type Map = {
 	[any]: any
 }
 
-export type ComponentInfo<T> = {
+export type Component<T> = {
 	data: T,
 	name: string
 }
 
-Types.ComponentInfo = t.interface({
+Types.Component = t.interface({
 	data = t.any,
 	name = t.string
 })
@@ -27,5 +27,7 @@ export type ComponentAssociations = {
 }
 
 Types.ComponentAssociations = t.interface({ [t.string] = t.array(t.any) })
+
+export type Assembler = <T>(data: T) -> Component<T>
 
 return Types

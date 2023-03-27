@@ -2,29 +2,27 @@
 
 local Types = require(script.Parent.Types)
 
-local Component = {}
+local Assembler = {}
 
-export type Component = typeof(Component.new())
-export type _Component = Component & _Properties
-
-type _Properties = {
-	_name: string
-}
-
-function Component.__call<T>(self: _Component, data: T): Types.ComponentInfo<T>
+function Assembler.__call<T>(self: _Properties, data: T): Types.Component<T>
 	return {data = data, name = self._name}
 end
 
-function Component.__tostring(self: _Component): string
+function Assembler.__tostring(self: _Properties): string
 	return self._name
 end
 
-function Component.new(name: string): <T>(data: T) -> Types.ComponentInfo<T>
+local function Constructor(name: string): Types.Assembler
 	local self: _Properties = {
 		_name = name,
 	}
 
-	return setmetatable(self, Component)
+	return setmetatable(self, Assembler) :: any
 end
 
-return Component
+--> World private properties
+type _Properties = {
+	_name: string
+}
+
+return Constructor
