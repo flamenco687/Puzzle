@@ -7,3 +7,6 @@
 
 # Packages
 /Packages
+
+# Test file
+/tests/Test.*
