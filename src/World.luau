@@ -39,7 +39,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler?): {any} | {[s
 	end
 
 	local componentsToUnpack: {any}? = if components then table.create(#components) else nil
-	local componentsToReturn: Types.Dictionary? = if not components then {} else nil
+	local componentsToReturn: Types.Dictionary<any>? = if not components then {} else nil
 
 	for component in self._componentAssociations do
 		if self._componentAssociations[component][id] ~= nil then

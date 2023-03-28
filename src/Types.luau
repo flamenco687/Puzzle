@@ -2,12 +2,12 @@ local t = require(script.Parent.Parent.t)
 
 local Types = {}
 
-export type Dictionary = {
-    [string]: any
+export type Dictionary<Value> = {
+    [string]: Value
 }
 
-export type Map = {
-	[any]: any
+export type Map<Key, Value> = {
+	[Key]: Value
 }
 
 export type Component<T> = {
