@@ -10,6 +10,8 @@ export type Map<Key, Value> = {
 	[Key]: Value
 }
 
+-->> Components
+
 export type Component<T> = {
 	data: T,
 	name: string
