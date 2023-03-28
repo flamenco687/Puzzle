@@ -20,7 +20,7 @@ local function Constructor(name: string): Types.Assembler
 	return setmetatable(self, Assembler) :: any
 end
 
---> World private properties
+-->> World private properties
 type _Properties = {
 	_name: string
 }

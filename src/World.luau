@@ -74,20 +74,20 @@ local function Constructor(): World
 	return setmetatable(self, Metatable) :: _World
 end
 
---> World methods
+-->> World methods
 type Methods = typeof(World)
 
---> World public properties
+-->> World public properties
 type Properties = {}
 
---> World private properties
+-->> World private properties
 type _Properties = {
 	_componentAssociations: Types.ComponentAssociations,
 	_nextId: number,
 	_size: number
 }
 
---> World classes
+-->> World classes
 type World = Methods & Properties
 type _World = Methods & _Properties
 
