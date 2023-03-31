@@ -13,6 +13,8 @@ function Assembler.__tostring(self: _Properties): string
 end
 
 local function Constructor(name: string): Types.Assembler
+	if name :: any == true then return Assembler :: any end --> Returns the metatable for testing purposes
+
 	local self: _Properties = {
 		_name = name,
 	}

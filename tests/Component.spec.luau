@@ -1,53 +1,59 @@
+--!strict
 return function ()
+    -->> Services
+
     local ReplicatedStorage = game:GetService("ReplicatedStorage")
-    local t = require(ReplicatedStorage.t)
 
-    local Component = require(ReplicatedStorage.Puzzle.Component)
+    -->> Modules
 
-    local ComponentInfo = t.interface({
-        name = t.string,
-        data = t.any
-    })
+    local Puzzle = ReplicatedStorage.Puzzle
 
-    local name = "Diego"
-    local input = 1
+    local Types = require(Puzzle.Types)
+    local Assembler = require(Puzzle.Assembler)
 
-    describe(".new", function()
-        it("should return a new component", function()
-            local component = Component.new(name)
-            expect(getmetatable(component)).to.equal(Component)
+    -->> Variables
+
+    local name: string = "Position"
+    local input: number = 1
+
+    -->> Descriptions
+
+    describe("new", function()
+        it("should return a new assembler", function()
+            local assembler = Assembler(name)
+            expect(getmetatable(assembler :: any)).to.equal(Assembler("s" :: any))
         end)
 
         it("that should have a name", function()
-            local component = Component.new(name)
-            expect(component._name).to.equal(name)
-            expect(component._name).to.be.a("string")
+            local assembler: { _name: string } = Assembler(name) :: any
+            expect(assembler._name).to.equal(name)
+            expect(assembler._name).to.be.a("string")
         end)
     end)
 
     describe("__call", function()
-        it("should return a ComponentInfo", function()
-            local component = Component.new(name)
-            expect(assert(ComponentInfo(component(input)))).to.be.ok()
+        it("should return a component", function()
+            local assembler = Assembler(name)
+            expect( if not Types.Component( assembler(input) ) then error() else true ).to.be.ok()
 
-            describe("componentInfo", function()
+            describe("Component", function()
                 it("should contain data matching the input", function()
-                    local data = component(input).data
+                    local data = assembler(input).data
                     expect(data).to.equal(input)
                 end)
 
-                it("should contain component's name", function()
-                    local componentInfo = component(input)
-                    expect(componentInfo.name).to.equal(name)
+                it("should contain the component's name", function()
+                    local component = assembler(input)
+                    expect(component.name).to.equal(name)
                 end)
             end)
         end)
     end)
 
     describe("__tostring", function()
-        it("should return component's name", function()
-            local component = Component.new(name)
-            expect(tostring(component)).to.equal(name)
+        it("should return the component's name", function()
+            local assembler = Assembler(name)
+            expect(tostring(assembler)).to.equal(name)
         end)
     end)
 end

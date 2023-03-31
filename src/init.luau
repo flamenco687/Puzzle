@@ -1,6 +1,8 @@
 --!strict
 
 return {
+    Types = require(script.Types),
+
     World = require(script.World),
-    Component = require(script.Component)
+    Assembler = require(script.Assembler),
 }
