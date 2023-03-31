@@ -21,7 +21,7 @@ return function ()
     describe("new", function()
         it("should return a new assembler", function()
             local assembler = Assembler(name)
-            expect(getmetatable(assembler :: any)).to.equal(Assembler("s" :: any))
+            expect(getmetatable(assembler :: any)).to.equal(Assembler(true :: any))
         end)
 
         it("that should have a name", function()
