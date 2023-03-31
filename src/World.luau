@@ -8,11 +8,11 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 	local componentInfos: {Types.Component<any>} = { ... }
 
 	for _, componentInfo in componentInfos do
-		if not self._componentAssociations[componentInfo.name] then
-			self._componentAssociations[componentInfo.name] = {}
+		if not self._storage[componentInfo.name] then
+			self._storage[componentInfo.name] = {}
 		end
 
-		self._componentAssociations[componentInfo.name][self._nextId] = componentInfo.data
+		self._storage[componentInfo.name][self._nextId] = componentInfo.data
 	end
 
 	self._nextId += 1
@@ -22,8 +22,8 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 end
 
 function World.Remove(self: _World, id: number): ()
-	for component in self._componentAssociations do
-		self._componentAssociations[component][id] = nil
+	for component in self._storage do
+		self._storage[component][id] = nil
 	end
 
 	self._size -= 1
@@ -41,12 +41,12 @@ function World.Get(self: _World, id: number, ...: Types.Assembler?): {any} | {[s
 	local componentsToUnpack: {any}? = if components then table.create(#components) else nil
 	local componentsToReturn: Types.Dictionary<any>? = if not components then {} else nil
 
-	for component in self._componentAssociations do
-		if self._componentAssociations[component][id] ~= nil then
+	for component in self._storage do
+		if self._storage[component][id] ~= nil then
 			if componentsToUnpack and components and components[component] then
-				table.insert(componentsToUnpack, (self._componentAssociations[component][id] :: Types.Component<any>))
+				table.insert(componentsToUnpack, (self._storage[component][id] :: Types.Component<any>))
 			elseif componentsToReturn then
-				componentsToReturn[component] = (self._componentAssociations[component][id] :: Types.Component<any>)
+				componentsToReturn[component] = (self._storage[component][id] :: Types.Component<any>)
 			end
 		end
 	end
@@ -58,7 +58,7 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>)
 	local components: {Types.Component<any>} = {...}
 
 	for _, componentInfo in components do
-		self._componentAssociations[componentInfo.name][id] = componentInfo.data
+		self._storage[componentInfo.name][id] = componentInfo.data
 	end
 end
 
@@ -66,7 +66,7 @@ local Metatable = { __index = World } --> Avoids inserting metamethods inside th
 
 local function Constructor(): World
 	local self: Properties & _Properties = {
-		_componentAssociations = {},
+		_storage = {},
 		_nextId = 1,
 		_size = 0
 	}
@@ -82,7 +82,7 @@ type Properties = {}
 
 -->> World private properties
 type _Properties = {
-	_componentAssociations: Types.ComponentAssociations,
+	_storage: Types.Storage,
 	_nextId: number,
 	_size: number
 }

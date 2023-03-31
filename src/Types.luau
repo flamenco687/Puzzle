@@ -17,19 +17,18 @@ export type Component<T> = {
 	name: string
 }
 
-Types.Component = t.interface({
-	data = t.any,
-	name = t.string
-})
+Types.Component = t.interface( { data = t.any, name = t.string } )
 
-export type ComponentAssociations = {
-	[string]: {
-		[number]: any
+export type Assembler = <T>(data: T) -> Component<T>
+
+-->> Storage
+
+export type Storage = {
+	[string]: { --> Entities per Component
+		[number]: any --> Data per Id
 	}
 }
 
-Types.ComponentAssociations = t.interface({ [t.string] = t.array(t.any) })
-
-export type Assembler = <T>(data: T) -> Component<T>
+Types.Storage = t.interface( { [t.string] = t.array(t.any) } )
 
 return Types
