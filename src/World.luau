@@ -5,14 +5,14 @@ local Types = require(script.Parent.Types)
 local World = {}
 
 function World.Spawn(self: _World, ...: Types.Component<any>): number
-	local componentInfos: {Types.Component<any>} = { ... }
+	local components: { Types.Component<any> } = { ... }
 
-	for _, componentInfo in componentInfos do
-		if not self._storage[componentInfo.name] then
-			self._storage[componentInfo.name] = {}
+	for _, component in components do
+		if not self._storage[component.name] then
+			self._storage[component.name] = {}
 		end
 
-		self._storage[componentInfo.name][self._nextId] = componentInfo.data
+		self._storage[component.name][self._nextId] = component.data
 	end
 
 	self._nextId += 1
@@ -30,35 +30,35 @@ function World.Remove(self: _World, id: number): ()
 end
 
 function World.Get(self: _World, id: number, ...: Types.Assembler?): {any} | {[string]: any}
-	local components: {[string]: true}? = if #{...} > 0 then {} else nil
+	local assemblers: { [string]: true }? = if #{...} > 0 then {} else nil
 
-	if components then
+	if assemblers then
 		for _, component: Types.Assembler in {... :: Types.Assembler} do
-			components[tostring(component)] = true
+			assemblers[tostring(component)] = true
 		end
 	end
 
-	local componentsToUnpack: {any}? = if components then table.create(#components) else nil
-	local componentsToReturn: Types.Dictionary<any>? = if not components then {} else nil
+	local assemblersToUnpack: { any }? = if assemblers then table.create(#assemblers) else nil
+	local assemblersToReturn: Types.Dictionary<any>? = if not assemblers then {} else nil
 
 	for component in self._storage do
 		if self._storage[component][id] ~= nil then
-			if componentsToUnpack and components and components[component] then
-				table.insert(componentsToUnpack, (self._storage[component][id] :: Types.Component<any>))
-			elseif componentsToReturn then
-				componentsToReturn[component] = (self._storage[component][id] :: Types.Component<any>)
+			if assemblersToUnpack and assemblers and assemblers[component] then
+				table.insert(assemblersToUnpack, (self._storage[component][id] :: Types.Component<any>))
+			elseif assemblersToReturn then
+				assemblersToReturn[component] = (self._storage[component][id] :: Types.Component<any>)
 			end
 		end
 	end
 
-	return if componentsToUnpack then table.unpack(componentsToUnpack) else componentsToReturn
+	return if assemblersToUnpack then table.unpack(assemblersToUnpack) else assemblersToReturn
 end
 
 function World.Set(self: _World, id: number, ...: Types.Component<any>)
 	local components: {Types.Component<any>} = {...}
 
-	for _, componentInfo in components do
-		self._storage[componentInfo.name][id] = componentInfo.data
+	for _, component in components do
+		self._storage[component.name][id] = component.data
 	end
 end
 
