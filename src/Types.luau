@@ -17,7 +17,7 @@ export type Component<T> = {
 	name: string
 }
 
-Types.Component = t.interface( { data = t.any, name = t.string } )
+Types.Component = t.interface({data = t.any, name = t.string})
 
 export type Assembler<T> = (data: T) -> Component<T>
 
@@ -29,6 +29,6 @@ export type Storage = {
 	}
 }
 
-Types.Storage = t.interface( { [t.string] = t.array(t.any) } )
+Types.Storage = t.interface({ [t.string] = t.array(t.any) })
 
 return Types

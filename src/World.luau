@@ -35,7 +35,7 @@ function World.Remove(self: _World, id: number): ()
 end
 
 function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any | Types.Dictionary<any>
-	local assemblers: { Types.Assembler<any> }? = if ... then {... :: Types.Assembler<any>} else nil
+	local assemblers: {Types.Assembler<any>}? = if ... then {... :: Types.Assembler<any>} else nil
 	local componentsToReturn = if assemblers then table.create(#assemblers) :: {any} else {} :: Types.Dictionary<any>
 
 	if assemblers then
