@@ -1,10 +1,13 @@
 --!strict
 
+local t = require(script.Parent.Parent.t)
 local Types = require(script.Parent.Types)
 
 local World = {}
 
 function World.Spawn(self: _World, ...: Types.Component<any>): number
+	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
+
 	local components: {Types.Component<any>} = {...}
 
 	for _, component in components do
@@ -22,6 +25,8 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 end
 
 function World.Remove(self: _World, id: number): ()
+	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
+
 	for component in self._storage do
 		self._storage[component][id] = nil
 
@@ -35,21 +40,32 @@ function World.Remove(self: _World, id: number): ()
 end
 
 function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any | Types.Dictionary<any>
-	local assemblers: {Types.Assembler<any>}? = if ... then {... :: Types.Assembler<any>} else nil
+	if not t.number(id) then error("Get() -> Argument #1 expected number, got "..typeof(id), 2) end
+
+	local assemblers = if ... then {...} else nil
 	local componentsToReturn = if assemblers then table.create(#assemblers) :: {any} else {} :: Types.Dictionary<any>
 
 	if assemblers then
-		for _, assembler in assemblers do
-			table.insert(componentsToReturn :: {any}, self._storage[tostring(assembler)][id]) end
+		for index, assembler in assemblers :: {Types.Assembler<any>} do
+			if not getmetatable(assembler :: any) or not getmetatable(assembler :: any).__call then
+				error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
+			end
+
+			table.insert(componentsToReturn :: {any}, self._storage[tostring(assembler)][id])
+		end
 		return table.unpack(componentsToReturn :: {any})
 	else
 		for component in self._storage do
-			(componentsToReturn :: Types.Dictionary<any>)[component] = self._storage[component][id] end
+			(componentsToReturn :: Types.Dictionary<any>)[component] = self._storage[component][id]
+		end
 		return componentsToReturn :: Types.Dictionary<any>
 	end
 end
 
-function World.Set(self: _World, id: number, ...: Types.Component<any>)
+function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
+	if not t.number(id) then error("Set() -> Argument #1 expected number, got "..typeof(id), 2) end
+	if not Types.Components(...) then error("Set() -> Argument #2 expected components tuple, got "..typeof(...), 2) end
+
 	local components: {Types.Component<any>} = {...}
 
 	for _, component in components do
@@ -57,7 +73,7 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>)
 	end
 end
 
-local Metatable = { __index = World } --> Avoids inserting metamethods inside the methods table
+local Metatable = { __index = World, _isWorld = true } --> Avoids inserting metamethods inside the methods table
 
 local function Constructor(): World
 	local self: Properties & _Properties = {

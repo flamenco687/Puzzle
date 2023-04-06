@@ -18,6 +18,7 @@ export type Component<T> = {
 }
 
 Types.Component = t.interface({data = t.any, name = t.string})
+Types.Components = t.tuple(Types.Component)
 
 export type Assembler<T> = (data: T) -> Component<T>
 

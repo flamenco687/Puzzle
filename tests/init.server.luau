@@ -1,1 +1,1 @@
-require(script.TestEZ).TestBootstrap:run(script:GetChildren(), { report = function() end }, { showTimingInfo = true })
+require(script.TestEZ).TestBootstrap:run(script:GetChildren(), { report = function() end })
