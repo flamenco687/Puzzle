@@ -2,30 +2,34 @@ local t = require(script.Parent.Parent.t)
 
 local Types = {}
 
-export type Dictionary = {
-    [string]: any
+export type Dictionary<Value> = {
+    [string]: Value
 }
 
-export type Map = {
-	[any]: any
+export type Map<Key, Value> = {
+	[Key]: Value
 }
 
-export type ComponentInfo<T> = {
+-->> Components
+
+export type Component<T> = {
 	data: T,
 	name: string
 }
 
-Types.ComponentInfo = t.interface({
-	data = t.any,
-	name = t.string
-})
+Types.Component = t.interface({data = t.any, name = t.string})
+Types.Components = t.tuple(Types.Component)
 
-export type ComponentAssociations = {
-	[string]: {
-		[number]: any
+export type Assembler<T> = (data: T) -> Component<T>
+
+-->> Storage
+
+export type Storage = {
+	[string]: { --> Entities per Component
+		[number]: any --> Data per Id
 	}
 }
 
-Types.ComponentAssociations = t.interface({ [t.string] = t.array(t.any) })
+Types.Storage = t.interface({ [t.string] = t.array(t.any) })
 
 return Types
