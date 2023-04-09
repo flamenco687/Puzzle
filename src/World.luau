@@ -24,7 +24,7 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 	return self._nextId - 1
 end
 
-function World.Remove(self: _World, id: number): ()
+function World.Remove(self: _World, id: number): true
 	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
@@ -37,6 +37,8 @@ function World.Remove(self: _World, id: number): ()
 
 	self._size -= 1
 	self._nextId -= 1
+
+	return true
 end
 
 function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any | Types.Dictionary<any>
@@ -62,7 +64,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 	end
 end
 
-function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
+function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 	if not t.number(id) then error("Set() -> Argument #1 expected number, got "..typeof(id), 2) end
 	if not Types.Components(...) then error("Set() -> Argument #2 expected components tuple, got "..typeof(...), 2) end
 
@@ -71,6 +73,8 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
 	for _, component in components do
 		self._storage[component.name][id] = component.data
 	end
+
+	return true
 end
 
 local Metatable = { __index = World, _isWorld = true } --> Avoids inserting metamethods inside the methods table
@@ -99,7 +103,7 @@ type _Properties = {
 }
 
 -->> World classes
-type World = Methods & Properties
-type _World = Methods & _Properties
+export type World = Methods & Properties
+export type _World = Methods & _Properties
 
 return Constructor

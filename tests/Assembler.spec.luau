@@ -19,36 +19,47 @@ return function ()
     -->> Descriptions
 
     describe("New", function()
-        describe("Should return a new assembler", function()
+        describe("should return: a new assembler", function()
             local assembler = Assembler(name) :: any
-            expect(getmetatable(assembler :: any)._isAssembler).to.equal(true)
 
-            it("Should have a name", function()
-                expect((assembler :: {_name: string})._name).to.equal(name)
+            expect(getmetatable(assembler)._isAssembler).to.equal(true)
+
+            describe("_name", function()
+                it("should equal: assembler's name", function()
+                    expect((assembler :: Assembler._Assembler)._name).to.equal(name)
+                end)
             end)
         end)
     end)
 
     describe("__call", function()
-        describe("Should return a component", function()
-            local assembler = Assembler(name)
-            expect( if not Types.Component( assembler(input) ) then error() else true ).to.be.ok()
+        local assembler = Assembler(name)
 
-            it("Should have data matching the input", function()
+        describe("should return: a component", function()
+            expect( if not Types.Component(assembler(input)) then error(false) else true ).to.be.ok()
+
+            describe("data", function()
                 local data = assembler(input).data
-                expect(data).to.equal(input)
+
+                it("should match: the input value", function()
+                    expect(data).to.equal(input)
+                end)
             end)
 
-            it("Should have name matching assembler's name", function()
+            describe("name", function()
                 local component = assembler(input)
-                expect(component.name).to.equal(name)
+
+                it("should equal: assembler's name", function()
+                    expect(component.name).to.equal(name)
+                end)
             end)
         end)
     end)
 
     describe("__tostring", function()
-        it("Should return assembler's name", function()
-            local assembler = Assembler(name)
+        local assembler = Assembler(name)
+
+        it("should return: assembler's name", function()
             expect(tostring(assembler)).to.equal(name)
         end)
     end)

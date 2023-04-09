@@ -5,18 +5,18 @@ local Types = require(script.Parent.Types)
 
 local Assembler = { _isAssembler = true }
 
-function Assembler.__call<T>(self: _Properties, data: T): Types.Component<T>
+function Assembler.__call<T>(self: _Assembler, data: T): Types.Component<T>
 	return {data = data, name = self._name}
 end
 
-function Assembler.__tostring(self: _Properties): string
+function Assembler.__tostring(self: _Assembler): string
 	return self._name
 end
 
 local function Constructor<T>(name: string): Types.Assembler<T>
 	if not t.string(name) then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
 
-	local self: _Properties = {
+	local self: _Assembler = {
 		_name = name,
 	}
 
@@ -24,7 +24,7 @@ local function Constructor<T>(name: string): Types.Assembler<T>
 end
 
 -->> World private properties
-type _Properties = {
+export type _Assembler = {
 	_name: string
 }
 
