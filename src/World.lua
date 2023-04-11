@@ -11,7 +11,7 @@ local Void = require(script.Parent.Void)
 
 local World = {}
 
-function World.Spawn(self: _World, ...: Types.Component<any>): number
+function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>)
 	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
 
 	local components: {Types.Component<any>} = {...}
@@ -21,21 +21,28 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 			self._storage[component.name] = {}
 		end
 
-		if self._nextId > #self._storage[component.name] + 1 then
-			for index = 1, self._nextId - 1 do
+		if id > #self._storage[component.name] + 1 then --> Introduces Void in possible void positions to prevent holes
+			for index = 1, id - 1 do
 				if self._storage[component.name][index] == nil then
 					self._storage[component.name][index] =  Void
 				end
 			end
 		end
 
-		self._storage[component.name][self._nextId] = component.data
+		self._storage[component.name][id] = component.data
 	end
 
-	self._nextId += 1
+	if id == self._nextId then
+		self._nextId += 1
+	end
+
 	self._size += 1
 
-	return self._nextId - 1
+	return id
+end
+
+function World.Spawn(self: _World, ...: Types.Component<any>): number
+	return self:SpawnAt(self._nextId, ...)
 end
 
 function World.Remove(self: _World, id: number): true
