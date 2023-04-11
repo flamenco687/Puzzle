@@ -1,7 +1,13 @@
 --!strict
 
+-->> Modules
+
 local t = require(script.Parent.Parent.t)
+
 local Types = require(script.Parent.Types)
+local Void = require(script.Parent.Void)
+
+-->> World
 
 local World = {}
 
@@ -13,6 +19,14 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 	for _, component in components do
 		if not self._storage[component.name] then
 			self._storage[component.name] = {}
+		end
+
+		if self._nextId > #self._storage[component.name] + 1 then
+			for index = 1, self._nextId - 1 do
+				if self._storage[component.name][index] == nil then
+					self._storage[component.name][index] =  Void
+				end
+			end
 		end
 
 		self._storage[component.name][self._nextId] = component.data
@@ -53,12 +67,15 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 				error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
 			end
 
-			table.insert(componentsToReturn :: {any}, self._storage[tostring(assembler)][id])
+			local data = self._storage[tostring(assembler)][id];
+			(componentsToReturn :: {any})[index] = if data == Void then nil else data
 		end
+
 		return table.unpack(componentsToReturn :: {any})
 	else
 		for component in self._storage do
-			(componentsToReturn :: Types.Dictionary<any>)[component] = self._storage[component][id]
+			local data = self._storage[component][id];
+			(componentsToReturn :: Types.Dictionary<any>)[component] = if data == Void then nil else data
 		end
 		return componentsToReturn :: Types.Dictionary<any>
 	end
