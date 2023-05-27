@@ -25,7 +25,7 @@ export type Assembler<T> = (data: T) -> Component<T>
 -->> Storage
 
 export type Storage = {
-	[string]: { --> Entities per Component
+	[string]: { --> Ids per Component
 		[number]: any --> Data per Id
 	}
 }
