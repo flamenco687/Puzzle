@@ -5,6 +5,7 @@
 local t = require(script.Parent.Parent.t)
 
 local Types = require(script.Parent.Types)
+local Void = require(script.Parent.Void)
 
 -->> World
 
