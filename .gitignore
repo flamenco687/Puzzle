@@ -1,12 +1,13 @@
 # Roblox project place file
-/Puzzle.rbxlx
+Puzzle.rbxlx
 
 # Roblox Studio lock files
-/*.rbxlx.lock
-/*.rbxl.lock
+*.rbxlx.lock
+*.rbxl.lock
 
 # Packages
-/Packages
+Packages
+wally.lock
 
-# Test file
-/tests/Test.*
+# Test file used for quick troubleshooting
+tests/Test.*

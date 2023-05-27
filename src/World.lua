@@ -21,22 +21,18 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>)
 			self._storage[component.name] = {}
 		end
 
-		if id > #self._storage[component.name] + 1 then --> Introduces Void in possible void positions to prevent holes
-			for index = 1, id - 1 do
-				if self._storage[component.name][index] == nil then
-					self._storage[component.name][index] =  Void
-				end
-			end
-		end
-
 		self._storage[component.name][id] = component.data
 	end
 
-	if id == self._nextId then
-		self._nextId += 1
-	end
+	if id >= self._nextId then
+		if id ~= self._nextId then
+			for missingId = self._nextId, id - 1 do
+				self._missing[missingId] = true
+			end
+		end
 
-	self._size += 1
+		self._nextId = id + 1
+	end
 
 	return id
 end
@@ -106,6 +102,7 @@ local Metatable = { __index = World, _isWorld = true } --> Avoids inserting meta
 local function Constructor(): World
 	local self: Properties & _Properties = {
 		_storage = {},
+		_missing = {},
 		_nextId = 1,
 		_size = 0
 	}
@@ -122,6 +119,7 @@ type Properties = {}
 -->> World private properties
 type _Properties = {
 	_storage: Types.Storage,
+	_missing: {true},
 	_nextId: number,
 	_size: number
 }
