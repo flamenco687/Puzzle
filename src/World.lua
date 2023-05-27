@@ -10,7 +10,11 @@ local Types = require(script.Parent.Types)
 
 local World = {}
 
-function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>)
+function World.Has(self: _World, id: number): boolean
+	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
+end
+
+function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
 	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
 
 	local components: {Types.Component<any>} = {...}
@@ -23,6 +27,10 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>)
 		self._storage[component.name][id] = component.data
 	end
 
+	if self._missing[id] then
+		self._missing[id] = nil
+	end
+
 	if id >= self._nextId then
 		if id ~= self._nextId then
 			for missingId = self._nextId, id - 1 do
@@ -32,6 +40,8 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>)
 
 		self._nextId = id + 1
 	end
+
+	self._size += 1
 
 	return id
 end
@@ -52,7 +62,25 @@ function World.Remove(self: _World, id: number): true
 	end
 
 	self._size -= 1
-	self._nextId -= 1
+
+	if #self._missing > id then
+		self._missing[id] = true
+	end
+
+	if id == self._nextId - 1 then
+		if self._size < id then
+			for possibleEntity = id - 1, 1, -1 do
+				if self._missing[possibleEntity] then
+					self._missing[possibleEntity] = nil
+				else
+					self._nextId = possibleEntity + 1
+					break
+				end
+			end
+		else
+			self._nextId -= 1
+		end
+	end
 
 	return true
 end
