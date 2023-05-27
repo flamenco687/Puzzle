@@ -5,7 +5,6 @@
 local t = require(script.Parent.Parent.t)
 
 local Types = require(script.Parent.Types)
-local Void = require(script.Parent.Void)
 
 -->> World
 
@@ -71,14 +70,14 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 			end
 
 			local data = self._storage[tostring(assembler)][id];
-			(componentsToReturn :: {any})[index] = if data == Void then nil else data
+			(componentsToReturn :: {any})[index] = data
 		end
 
 		return table.unpack(componentsToReturn :: {any})
 	else
 		for component in self._storage do
 			local data = self._storage[component][id];
-			(componentsToReturn :: Types.Dictionary<any>)[component] = if data == Void then nil else data
+			(componentsToReturn :: Types.Dictionary<any>)[component] = data
 		end
 		return componentsToReturn :: Types.Dictionary<any>
 	end
