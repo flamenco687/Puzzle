@@ -5,13 +5,127 @@
 local t = require(script.Parent.Parent.t)
 
 local Types = require(script.Parent.Types)
-local Void = require(script.Parent.Void)
 
 -->> World
 
 local World = {}
 
-function World.Spawn(self: _World, ...: Types.Component<any>): number
+function World.Has(self: _World, id: number): boolean
+	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
+end
+
+--->> QueryResult
+
+local QueryResult = {}
+local QueryResultMetatable = { __index = QueryResult }
+
+local QueryResultCache = {}
+
+function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): QueryResult
+	local without = {...}
+	local queryResultId = self._queryResultId .. "-"
+
+	for _, assembler in without do
+		queryResultId = queryResultId .. tostring(assembler)
+	end
+
+	if QueryResultCache[queryResultId] then
+		return QueryResultCache[queryResultId]
+	end
+
+	local queryResultWithout: QueryResultProperties & _QueryResultProperties = {
+		_world = self._world,
+		_with = self._with,
+		_without = without,
+		_queryResultId = queryResultId,
+	}
+
+	QueryResultCache[queryResultId] = queryResultWithout
+
+	print(QueryResultCache)
+
+	return setmetatable(queryResultWithout, QueryResultMetatable) :: QueryResult
+end
+
+function QueryResultMetatable.__iter(self: _QueryResult)
+	local id = 0
+
+	local function Iter()
+		id += 1
+
+		if id == self._world._nextId then return end --> Terminates the loop
+		if self._world._missing[id] then return Iter() end --> Continues the loop
+
+		if self._without then
+			for _, assembler in self._without do
+				if self._world:Get(id, assembler) then return Iter() end
+			end
+		end
+
+		local data = {}
+
+		for order, assembler in self._with do
+			data[order] = self._world:Get(id, assembler)
+		end
+
+		if #data < #self._with then return Iter() end --> Ensures that all components are present
+
+		return id, table.unpack(data)
+	end
+
+	return Iter
+end
+
+local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>): QueryResult
+	local with = {...}
+	local queryResultId = ""
+
+	for _, assembler in with do
+		queryResultId = queryResultId .. tostring(assembler)
+	end
+
+	if QueryResultCache[queryResultId] then
+		return QueryResultCache[queryResultId]
+	end
+
+	local self: QueryResultProperties & _QueryResultProperties = {
+		_world = world,
+		_with = {...},
+		_queryResultId = queryResultId
+	}
+
+	QueryResultCache[queryResultId] = self
+
+	print(QueryResultCache)
+
+	return setmetatable(self, QueryResultMetatable) :: _QueryResult
+end
+
+-->> QueryResult methods
+type QueryResultMethods = typeof(QueryResult)
+
+-->> QueryResult public properties
+type QueryResultProperties = {}
+
+-->> QueryResult private properties
+type _QueryResultProperties = {
+	_world: _World,
+	_queryResultId: number,
+	_with: {Types.Assembler<any>},
+	_without: {Types.Assembler<any>}?
+}
+
+-->> QueryResult classes
+export type QueryResult = QueryResultMethods
+export type _QueryResult = QueryResultMethods & _QueryResultProperties
+
+--->> World
+
+function World:Query(...: Types.Assembler<any>): QueryResult
+	return QueryResultConstructor(self, ...)
+end
+
+function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
 	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
 
 	local components: {Types.Component<any>} = {...}
@@ -21,21 +135,30 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 			self._storage[component.name] = {}
 		end
 
-		if self._nextId > #self._storage[component.name] + 1 then
-			for index = 1, self._nextId - 1 do
-				if self._storage[component.name][index] == nil then
-					self._storage[component.name][index] =  Void
-				end
+		self._storage[component.name][id] = component.data
+	end
+
+	if self._missing[id] then
+		self._missing[id] = nil
+	end
+
+	if id >= self._nextId then
+		if id ~= self._nextId then
+			for missingId = self._nextId, id - 1 do
+				self._missing[missingId] = true
 			end
 		end
 
-		self._storage[component.name][self._nextId] = component.data
+		self._nextId = id + 1
 	end
 
-	self._nextId += 1
 	self._size += 1
 
-	return self._nextId - 1
+	return id
+end
+
+function World.Spawn(self: _World, ...: Types.Component<any>): number
+	return self:SpawnAt(self._nextId, ...)
 end
 
 function World.Remove(self: _World, id: number): true
@@ -50,7 +173,25 @@ function World.Remove(self: _World, id: number): true
 	end
 
 	self._size -= 1
-	self._nextId -= 1
+
+	if #self._missing > id then
+		self._missing[id] = true
+	end
+
+	if id == self._nextId - 1 then
+		if self._size < id then
+			for possibleEntity = id - 1, 1, -1 do
+				if self._missing[possibleEntity] then
+					self._missing[possibleEntity] = nil
+				else
+					self._nextId = possibleEntity + 1
+					break
+				end
+			end
+		else
+			self._nextId -= 1
+		end
+	end
 
 	return true
 end
@@ -68,14 +209,14 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 			end
 
 			local data = self._storage[tostring(assembler)][id];
-			(componentsToReturn :: {any})[index] = if data == Void then nil else data
+			(componentsToReturn :: {any})[index] = data
 		end
 
 		return table.unpack(componentsToReturn :: {any})
 	else
 		for component in self._storage do
 			local data = self._storage[component][id];
-			(componentsToReturn :: Types.Dictionary<any>)[component] = if data == Void then nil else data
+			(componentsToReturn :: Types.Dictionary<any>)[component] = data
 		end
 		return componentsToReturn :: Types.Dictionary<any>
 	end
@@ -99,6 +240,7 @@ local Metatable = { __index = World, _isWorld = true } --> Avoids inserting meta
 local function Constructor(): World
 	local self: Properties & _Properties = {
 		_storage = {},
+		_missing = {},
 		_nextId = 1,
 		_size = 0
 	}
@@ -115,6 +257,7 @@ type Properties = {}
 -->> World private properties
 type _Properties = {
 	_storage: Types.Storage,
+	_missing: {true},
 	_nextId: number,
 	_size: number
 }
