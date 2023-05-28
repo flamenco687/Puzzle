@@ -42,8 +42,6 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 
 	QueryResultCache[queryResultId] = queryResultWithout
 
-	print(QueryResultCache)
-
 	return setmetatable(queryResultWithout, QueryResultMetatable) :: QueryResult
 end
 
@@ -95,8 +93,6 @@ local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>):
 	}
 
 	QueryResultCache[queryResultId] = self
-
-	print(QueryResultCache)
 
 	return setmetatable(self, QueryResultMetatable) :: _QueryResult
 end
