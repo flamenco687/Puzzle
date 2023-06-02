@@ -3,6 +3,7 @@
 -->> Modules
 
 local t = require(script.Parent.Parent.t)
+local Signal = require(script.Parent.Signal)
 
 local Types = require(script.Parent.Types)
 
@@ -117,6 +118,31 @@ export type _QueryResult = QueryResultMethods & _QueryResultProperties
 
 --->> World
 
+type SignalCache = {
+	[_World]: {
+		[number | Types.Assembler<any>]: Signal.Signal
+	}
+}
+
+local SignalCache = {}
+
+function World._Update(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
+	local componentSignal, entitySignal = SignalCache[self][component], SignalCache[self][id]
+
+	if componentSignal then componentSignal:Fire(id, oldValue, newValue) end
+	if entitySignal then entitySignal:Fire(component, oldValue, newValue) end
+end
+
+function World.OnUpdate(self: _World, index: number | Types.Assembler<any>): Signal.Signal
+	if typeof(index) ~= "number" then index = tostring(index) end
+
+	if not SignalCache[self][index] then
+		SignalCache[self][index] = Signal(true)
+	end
+
+	return SignalCache[self][index]
+end
+
 function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
 	return QueryResultConstructor(self, ...)
 end
@@ -132,6 +158,7 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): num
 		end
 
 		self._storage[component.name][id] = component.data
+		self:_Update(component.name, id, nil, component.data)
 	end
 
 	if self._missing[id] then
@@ -161,6 +188,7 @@ function World.Remove(self: _World, id: number): true
 	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
+		self:_Update(component, id, self._storage[component][id], nil)
 		self._storage[component][id] = nil
 
 		if #self._storage[component] == 0 then
@@ -225,6 +253,11 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 	local components: {Types.Component<any>} = {...}
 
 	for _, component in components do
+		if not self._storage[component.name] then
+			self._storage[component.name] = {}
+		end
+
+		self:_Update(component.name, id, self._storage[component.name][id], component.data)
 		self._storage[component.name][id] = component.data
 	end
 
@@ -241,6 +274,8 @@ local function Constructor(): World
 		_size = 0
 	}
 
+	SignalCache[self] = {}
+
 	return setmetatable(self, Metatable) :: _World
 end
 
@@ -249,8 +284,6 @@ type Methods = typeof(World)
 
 -->> World public properties
 type Properties = {}
-
--->> World private properties
 type _Properties = {
 	_storage: Types.Storage,
 	_missing: {true},
@@ -260,6 +293,6 @@ type _Properties = {
 
 -->> World classes
 export type World = Methods & Properties
-export type _World = Methods & _Properties
+export type _World = World & _Properties
 
 return Constructor
