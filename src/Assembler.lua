@@ -19,7 +19,7 @@ function Assembler.__tostring(self: _Assembler): string
 	return self._name
 end
 
-local function Constructor<T>(name: string): Types.Assembler<T>
+local function Constructor<T>(name: string): Assembler<T>
 	if not t.string(name) then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
 
 	local self: _Assembler = {
@@ -28,6 +28,8 @@ local function Constructor<T>(name: string): Types.Assembler<T>
 
 	return setmetatable(self, Assembler) :: any
 end
+
+export type Assembler<T> = (data: T) -> Types.Component<T> --> Assembler is exported twice in different modules for easier access
 
 -->> World private properties
 export type _Assembler = {

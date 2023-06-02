@@ -117,7 +117,7 @@ export type _QueryResult = QueryResultMethods & _QueryResultProperties
 
 --->> World
 
-function World:Query(...: Types.Assembler<any>): QueryResult
+function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
 	return QueryResultConstructor(self, ...)
 end
 
