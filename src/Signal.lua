@@ -402,7 +402,7 @@ setmetatable(Signal, {
 
 -->> Connection classes
 export type Connection = ConnectionMethods & ConnectionProperties
-export type _Connection = Connection & _ConnectionProperties
+export type _Connection = ConnectionMethods & _ConnectionProperties
 
 -->> Connection methods
 export type ConnectionMethods = typeof(Connection)
@@ -411,14 +411,14 @@ export type ConnectionMethods = typeof(Connection)
 export type ConnectionProperties = {
     Connected: boolean
 }
-export type _ConnectionProperties = {
+export type _ConnectionProperties = ConnectionProperties & {
     _signal: Signal,
     _callback: (...any) -> (...any),
     _next: boolean
 }
 
 -->> Signal classes
-export type Signal = SignalMethods
+export type Signal = SignalMethods & SignalProperties
 export type _Signal = SignalMethods & _SignalProperties
 
 -->> Signal methods
@@ -426,7 +426,7 @@ export type SignalMethods = typeof(Signal)
 
 -->> Signal properties
 export type SignalProperties = {}
-export type _SignalProperties = {
+export type _SignalProperties = SignalProperties & {
     _handlerListHead: Connection | false,
     _proxyHandler: RBXScriptConnection?,
     _destroyOnLastConnection: true?

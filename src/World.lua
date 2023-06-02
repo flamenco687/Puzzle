@@ -7,18 +7,39 @@ local Signal = require(script.Parent.Signal)
 
 local Types = require(script.Parent.Types)
 
--->> World
-
-local World = {}
-
-function World.Has(self: _World, id: number): boolean
-	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
-end
-
 --->> QueryResult
 
 local QueryResult = {}
-local QueryResultMetatable = { __index = QueryResult }
+local QueryResultMetatable = { __index = QueryResult, _isQueryResult = true }
+
+function QueryResultMetatable.__iter(self: _QueryResult)
+	local id = 0
+
+	local function Iter()
+		id += 1
+
+		if id == self._world._nextId then return end --> Terminates the loop
+		if self._world._missing[id] then return Iter() end --> Continues the loop
+
+		if self._without then
+			for _, assembler in self._without do
+				if self._world:Get(id, assembler) then return Iter() end --> Excludes components
+			end
+		end
+
+		local data = {}
+
+		for order, assembler in self._with do
+			data[order] = self._world:Get(id, assembler)
+		end
+
+		if #data < #self._with then return Iter() end --> Ensures that all components are present
+
+		return id, table.unpack(data)
+	end
+
+	return Iter
+end
 
 local QueryResultCache = {}
 
@@ -26,7 +47,10 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 	local without = {...}
 	local queryResultId = self._queryResultId .. "-"
 
-	for _, assembler in without do
+	for index, assembler in without do
+		if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
+			error("Without() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
+		end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
@@ -46,40 +70,14 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 	return setmetatable(queryResultWithout, QueryResultMetatable) :: QueryResult
 end
 
-function QueryResultMetatable.__iter(self: _QueryResult)
-	local id = 0
-
-	local function Iter()
-		id += 1
-
-		if id == self._world._nextId then return end --> Terminates the loop
-		if self._world._missing[id] then return Iter() end --> Continues the loop
-
-		if self._without then
-			for _, assembler in self._without do
-				if self._world:Get(id, assembler) then return Iter() end
-			end
-		end
-
-		local data = {}
-
-		for order, assembler in self._with do
-			data[order] = self._world:Get(id, assembler)
-		end
-
-		if #data < #self._with then return Iter() end --> Ensures that all components are present
-
-		return id, table.unpack(data)
-	end
-
-	return Iter
-end
-
 local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>): QueryResult
 	local with = {...}
 	local queryResultId = ""
 
-	for _, assembler in with do
+	for index, assembler in with do
+		if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
+			error("Query() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 3)
+		end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
@@ -124,17 +122,28 @@ type SignalCache = {
 	}
 }
 
-local SignalCache = {}
+-->> World
+
+local World = {}
+local Metatable = { __index = World, _isWorld = true } --> Avoids inserting metamethods inside the methods table
+
+local SignalCache: SignalCache = {}
 
 function World._Update(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
-	local componentSignal, entitySignal = SignalCache[self][component], SignalCache[self][id]
+	local componentSignal: Signal.Signal, entitySignal: Signal.Signal = SignalCache[self][component], SignalCache[self][id]
 
 	if componentSignal then componentSignal:Fire(id, oldValue, newValue) end
 	if entitySignal then entitySignal:Fire(component, oldValue, newValue) end
 end
 
 function World.OnUpdate(self: _World, index: number | Types.Assembler<any>): Signal.Signal
-	if typeof(index) ~= "number" then index = tostring(index) end
+	if not t.union(t.number, t.table) then error("OnUpdate() -> Argument #1 expected number or assembler, got "..typeof(index), 2) end
+
+	if typeof(index) == "table" and (not getmetatable(index) or not getmetatable(index)._isAssembler) then
+		error("OnUpdate() -> Argument #1 expected assembler, got "..typeof(index), 2)
+	else
+		index = tostring(index)
+	end
 
 	if not SignalCache[self][index] then
 		SignalCache[self][index] = Signal(true)
@@ -143,11 +152,17 @@ function World.OnUpdate(self: _World, index: number | Types.Assembler<any>): Sig
 	return SignalCache[self][index]
 end
 
+function World.Has(self: _World, id: number): boolean
+	if not t.number(id) then error("Has() -> Argument #1 expected number, got "..typeof(id), 2) end
+	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
+end
+
 function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
 	return QueryResultConstructor(self, ...)
 end
 
 function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
+	if not t.number(id) then error("SpawnAt() -> Argument #1 expected number, got "..typeof(id), 2) end
 	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
 
 	local components: {Types.Component<any>} = {...}
@@ -228,7 +243,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 
 	if assemblers then
 		for index, assembler in assemblers :: {Types.Assembler<any>} do
-			if not getmetatable(assembler :: any) or not getmetatable(assembler :: any).__call then
+			if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
 				error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
 			end
 
@@ -263,8 +278,6 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 
 	return true
 end
-
-local Metatable = { __index = World, _isWorld = true } --> Avoids inserting metamethods inside the methods table
 
 local function Constructor(): World
 	local self: Properties & _Properties = {
