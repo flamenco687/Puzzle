@@ -14,6 +14,113 @@ function World.Has(self: _World, id: number): boolean
 	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
 end
 
+--->> QueryResult
+
+local QueryResult = {}
+local QueryResultMetatable = { __index = QueryResult }
+
+local QueryResultCache = {}
+
+function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): QueryResult
+	local without = {...}
+	local queryResultId = self._queryResultId .. "-"
+
+	for _, assembler in without do
+		queryResultId = queryResultId .. tostring(assembler)
+	end
+
+	if QueryResultCache[queryResultId] then
+		return QueryResultCache[queryResultId]
+	end
+
+	local queryResultWithout: QueryResultProperties & _QueryResultProperties = {
+		_world = self._world,
+		_with = self._with,
+		_without = without,
+		_queryResultId = queryResultId,
+	}
+
+	QueryResultCache[queryResultId] = queryResultWithout
+
+	return setmetatable(queryResultWithout, QueryResultMetatable) :: QueryResult
+end
+
+function QueryResultMetatable.__iter(self: _QueryResult)
+	local id = 0
+
+	local function Iter()
+		id += 1
+
+		if id == self._world._nextId then return end --> Terminates the loop
+		if self._world._missing[id] then return Iter() end --> Continues the loop
+
+		if self._without then
+			for _, assembler in self._without do
+				if self._world:Get(id, assembler) then return Iter() end
+			end
+		end
+
+		local data = {}
+
+		for order, assembler in self._with do
+			data[order] = self._world:Get(id, assembler)
+		end
+
+		if #data < #self._with then return Iter() end --> Ensures that all components are present
+
+		return id, table.unpack(data)
+	end
+
+	return Iter
+end
+
+local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>): QueryResult
+	local with = {...}
+	local queryResultId = ""
+
+	for _, assembler in with do
+		queryResultId = queryResultId .. tostring(assembler)
+	end
+
+	if QueryResultCache[queryResultId] then
+		return QueryResultCache[queryResultId]
+	end
+
+	local self: QueryResultProperties & _QueryResultProperties = {
+		_world = world,
+		_with = {...},
+		_queryResultId = queryResultId
+	}
+
+	QueryResultCache[queryResultId] = self
+
+	return setmetatable(self, QueryResultMetatable) :: _QueryResult
+end
+
+-->> QueryResult methods
+type QueryResultMethods = typeof(QueryResult)
+
+-->> QueryResult public properties
+type QueryResultProperties = {}
+
+-->> QueryResult private properties
+type _QueryResultProperties = {
+	_world: _World,
+	_queryResultId: number,
+	_with: {Types.Assembler<any>},
+	_without: {Types.Assembler<any>}?
+}
+
+-->> QueryResult classes
+export type QueryResult = QueryResultMethods
+export type _QueryResult = QueryResultMethods & _QueryResultProperties
+
+--->> World
+
+function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
+	return QueryResultConstructor(self, ...)
+end
+
 function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
 	if not Types.Components(...) then error("Spawn() -> Arguments expected components tuple, got "..typeof(...), 2) end
 
