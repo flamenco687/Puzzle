@@ -1,6 +1,6 @@
 --!strict
 
--->> Modules
+--->> Modules
 
 local t = require(script.Parent.Parent.t)
 local Signal = require(script.Parent.Signal)
@@ -8,6 +8,23 @@ local Signal = require(script.Parent.Signal)
 local Types = require(script.Parent.Types)
 
 --->> QueryResult
+
+export type QueryResult = {
+	-->> Public methods
+	Without: (self: QueryResult, ...Types.Assembler<any>) -> QueryResult
+}
+
+type _QueryResultProperties = {
+	_world: _World,
+	_queryResultId: string,
+	_with: {Types.Assembler<any>},
+	_without: {Types.Assembler<any>}?
+}
+
+export type _QueryResult = _QueryResultProperties & {
+	-->> Public methods
+	Without: (self: _QueryResult, ...Types.Assembler<any>) -> QueryResult
+}
 
 local QueryResult = {}
 local QueryResultMetatable = { __index = QueryResult, _isQueryResult = true }
@@ -41,10 +58,14 @@ function QueryResultMetatable.__iter(self: _QueryResult)
 	return Iter
 end
 
-local QueryResultCache = {}
+type QueryResultCache = {
+	[string]: QueryResult | _QueryResult
+}
+
+local QueryResultCache: QueryResultCache = {}
 
 function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): QueryResult
-	local without = {...}
+	local without: {Types.Assembler<any>} = {...}
 	local queryResultId = self._queryResultId .. "-"
 
 	for index, assembler in without do
@@ -58,20 +79,22 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 		return QueryResultCache[queryResultId]
 	end
 
-	local queryResultWithout: QueryResultProperties & _QueryResultProperties = {
+	local properties: _QueryResultProperties = {
 		_world = self._world,
+		_queryResultId = queryResultId,
 		_with = self._with,
 		_without = without,
-		_queryResultId = queryResultId,
 	}
+
+	local queryResultWithout: _QueryResult = setmetatable(properties, QueryResultMetatable) :: any
 
 	QueryResultCache[queryResultId] = queryResultWithout
 
-	return setmetatable(queryResultWithout, QueryResultMetatable) :: QueryResult
+	return queryResultWithout :: QueryResult
 end
 
 local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>): QueryResult
-	local with = {...}
+	local with: {Types.Assembler<any>} = {...}
 	local queryResultId = ""
 
 	for index, assembler in with do
@@ -85,64 +108,85 @@ local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>):
 		return QueryResultCache[queryResultId]
 	end
 
-	local self: QueryResultProperties & _QueryResultProperties = {
+	local properties: _QueryResultProperties = {
 		_world = world,
-		_with = {...},
-		_queryResultId = queryResultId
+		_queryResultId = queryResultId,
+		_with = with,
 	}
+
+	local self: _QueryResult = setmetatable(properties, QueryResultMetatable) :: any
 
 	QueryResultCache[queryResultId] = self
 
-	return setmetatable(self, QueryResultMetatable) :: _QueryResult
+	return self :: QueryResult
 end
-
--->> QueryResult methods
-type QueryResultMethods = typeof(QueryResult)
-
--->> QueryResult public properties
-type QueryResultProperties = {}
-
--->> QueryResult private properties
-type _QueryResultProperties = {
-	_world: _World,
-	_queryResultId: number,
-	_with: {Types.Assembler<any>},
-	_without: {Types.Assembler<any>}?
-}
-
--->> QueryResult classes
-export type QueryResult = QueryResultMethods
-export type _QueryResult = QueryResultMethods & _QueryResultProperties
 
 --->> World
 
-type SignalCache = {
-	[_World]: {
-		[number | Types.Assembler<any>]: Signal.Signal
-	}
+export type World = {
+	-->> Public methods
+	OnUpdate: (self: World, index: number | Types.Assembler<any>) -> Signal.Signal,
+	Has: (self: World, id: number) -> boolean,
+	Query: (self: World, ...Types.Assembler<any>) -> QueryResult,
+	SpawnAt: (self: World, id: number, ...Types.Component<any>) -> number,
+	Spawn: (self: World, ...Types.Component<any>) -> number,
+	Remove: (self: World, id: number) -> true,
+	Get: (self: World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
+	Set: (self: World, id: number, ...Types.Component<any>) -> true
 }
 
--->> World
+type _WorldProperties = {
+	_storage: Types.Storage,
+	_missing: {true},
+	_nextId: number,
+	_size: number
+}
+
+export type _World = _WorldProperties & {
+	-->> Private methods
+	_Update: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
+	-->> Public methods
+	OnUpdate: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
+	Has: (self: _World, id: number) -> boolean,
+	Query: (self: _World, ...Types.Assembler<any>) -> QueryResult,
+	SpawnAt: (self: _World, id: number, ...Types.Component<any>) -> number,
+	Spawn: (self: _World, ...Types.Component<any>) -> number,
+	Remove: (self: _World, id: number) -> true,
+	Get: (self: _World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
+	Set: (self: _World, id: number, ...Types.Component<any>) -> true
+}
 
 local World = {}
 local Metatable = { __index = World, _isWorld = true } --> Avoids inserting metamethods inside the methods table
 
+type SignalCache = {
+	[_World]: {
+		[number | string]: Signal.Signal
+	}
+}
+
 local SignalCache: SignalCache = {}
 
+-->> Private methods
+
 function World._Update(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
-	local componentSignal: Signal.Signal, entitySignal: Signal.Signal = SignalCache[self][component], SignalCache[self][id]
+	local componentSignal, entitySignal = SignalCache[self][component], SignalCache[self][id]
 
 	if componentSignal then componentSignal:Fire(id, oldValue, newValue) end
 	if entitySignal then entitySignal:Fire(component, oldValue, newValue) end
 end
 
-function World.OnUpdate(self: _World, index: number | Types.Assembler<any>): Signal.Signal
-	if not t.union(t.number, t.table) then error("OnUpdate() -> Argument #1 expected number or assembler, got "..typeof(index), 2) end
+-->> Publich methods
 
-	if typeof(index) == "table" and (not getmetatable(index) or not getmetatable(index)._isAssembler) then
+function World.OnUpdate(self: _World, idOrAssembler: number | Types.Assembler<any>): Signal.Signal
+	if not t.union(t.number, t.table)(idOrAssembler) then error("OnUpdate() -> Argument #1 expected number or assembler, got "..typeof(idOrAssembler), 2) end
+
+	local index: number | string
+
+	if typeof(idOrAssembler) == "table" and (not getmetatable(idOrAssembler :: any) or not getmetatable(idOrAssembler :: any)._isAssembler) then
 		error("OnUpdate() -> Argument #1 expected assembler, got "..typeof(index), 2)
 	else
-		index = tostring(index)
+		index = tostring(idOrAssembler)
 	end
 
 	if not SignalCache[self][index] then
@@ -257,7 +301,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 			local data = self._storage[component][id];
 			(componentsToReturn :: Types.Dictionary<any>)[component] = data
 		end
-		return componentsToReturn :: Types.Dictionary<any>
+		return componentsToReturn
 	end
 end
 
@@ -280,32 +324,18 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 end
 
 local function Constructor(): World
-	local self: Properties & _Properties = {
+	local properties: _WorldProperties = {
 		_storage = {},
 		_missing = {},
 		_nextId = 1,
 		_size = 0
 	}
 
+	local self: _World = setmetatable(properties, Metatable) :: any
+
 	SignalCache[self] = {}
 
-	return setmetatable(self, Metatable) :: _World
+	return self :: World
 end
-
--->> World methods
-type Methods = typeof(World)
-
--->> World public properties
-type Properties = {}
-type _Properties = {
-	_storage: Types.Storage,
-	_missing: {true},
-	_nextId: number,
-	_size: number
-}
-
--->> World classes
-export type World = Methods & Properties
-export type _World = World & _Properties
 
 return Constructor

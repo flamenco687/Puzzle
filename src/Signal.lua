@@ -1,3 +1,5 @@
+--!strict
+
 -- -----------------------------------------------------------------------------
 --               Batched Yield-Safe Signal Implementation                     --
 -- This is a Signal class which has effectively identical behavior to a       --
@@ -33,7 +35,7 @@ local freeRunnerThread = nil
 -- currently idle one.
 -- If there was a currently idle runner thread already, that's okay, that old
 -- one will just get thrown and eventually GCed.
-local function acquireRunnerThreadAndCallEventHandler(callback: (...any) -> (...any), ...: any)
+local function acquireRunnerThreadAndCallEventHandler(callback: (...any) -> (...any), ...)
 	local acquiredRunnerThread = freeRunnerThread
 	freeRunnerThread = nil
 	callback(...)
@@ -75,14 +77,17 @@ end
 local Connection = {}
 local ConnectionMetatable = { __index = Connection }
 
-local function ConnectionConstructor(signal: Signal, callback: (...any) -> (...any)): Connection
-    local self: ConnectionProperties & _ConnectionProperties = {
+local function ConnectionConstructor(signal: _Signal, callback: (...any) -> (...any)): Connection
+    local properties: _ConnectionProperties = {
         Connected = true,
         _signal = signal,
         _callback = callback,
-        _next = false,
+        _next = false
     }
-    return setmetatable(self, ConnectionMetatable) :: _Connection
+
+	local self: _Connection = setmetatable(properties, ConnectionMetatable) :: any
+
+    return self :: Connection
 end
 
 function Connection.Disconnect(self: _Connection)
@@ -101,20 +106,16 @@ function Connection.Disconnect(self: _Connection)
 	else
 		local previous = self._signal._handlerListHead
 
-		while previous and previous._next ~= self do
-			previous = previous._next
+		while previous and (previous :: _Connection)._next ~= self do
+			previous = (previous :: _Connection)._next
 		end
 
 		if previous then
-			previous._next = self._next
+			(previous :: _Connection)._next = self._next
 		end
 	end
 
     if self._signal._destroyOnLastConnection and not self._signal._handlerListHead then self._signal:Destroy() end
-end
-
-function Connection.Destroy(self: _Connection)
-    self:Disconnect()
 end
 
 -- Make Connection strict
@@ -153,18 +154,73 @@ setmetatable(Connection, {
 local Signal = {}
 local SignalMetatable = { __index = Signal }
 
+export type ConnectionProperties = {
+	Connected: boolean
+}
+
+export type Connection = ConnectionProperties & {
+	Disconnect: (self: Connection) -> (),
+}
+
+export type _ConnectionProperties = {
+	Connected: boolean,
+	_signal: _Signal,
+	_callback: (...any) -> (...any),
+	_next: _Connection | false
+}
+
+export type _Connection = _ConnectionProperties & {
+	Disconnect: (self: _Connection) -> (),
+}
+
+--->> Signal
+
+export type Signal = {
+	Wrap: (rbxScriptSignal: RBXScriptSignal) -> (),
+	--> Methods
+	Fire: (self: Signal, ...any) -> (),
+	FireDeferred: (self: Signal, ...any) -> (),
+	Connect: (self: Signal, callback: (...any) -> (...any)) -> Connection,
+	Once: (self: Signal, callback: (...any) -> (...any)) -> Connection,
+	DisconnectAll: (self: Signal) -> (),
+	GetConnections: (self: Signal) -> { Connection },
+	Destroy: (self: Signal) -> (),
+	Wait: (self: Signal) -> ...any,
+}
+
+export type _SignalProperties = {
+	_handlerListHead: _Connection | false,
+	_proxyHandler: RBXScriptConnection?,
+	_destroyOnLastConnection: true?
+}
+
+export type _Signal = _SignalProperties & {
+	Wrap: (rbxScriptSignal: RBXScriptSignal) -> (),
+	--> Methods
+	Fire: (self: _Signal, ...any) -> (),
+	FireDeferred: (self: _Signal, ...any) -> (),
+	Connect: (self: _Signal, callback: (...any) -> (...any)) -> Connection,
+	Once: (self: _Signal, callback: (...any) -> (...any)) -> Connection,
+	DisconnectAll: (self: _Signal) -> (),
+	GetConnections: (self: _Signal) -> { Connection },
+	Destroy: (self: _Signal) -> (),
+	Wait: (self: _Signal) -> ...any,
+}
+
 --[=[
 	Constructs a new Signal
 
 	@return Signal
 ]=]
 local function SignalConstructor(destroyOnLastConnection: true?): Signal
-	local self: SignalProperties & _SignalProperties = {
+	local properties: _SignalProperties = {
         _handlerListHead = false,
-        _proxyHandler = nil,
         _destroyOnLastConnection = destroyOnLastConnection
 	}
-	return setmetatable(self, SignalMetatable) :: _Signal
+
+	local self: _Signal = setmetatable(properties, SignalMetatable) :: any
+
+	return self :: Signal
 end
 
 --[=[
@@ -180,12 +236,12 @@ end
 	Instance.new("Part").Parent = workspace
 	```
 ]=]
-function Signal.Wrap(rbxScriptSignal: RBXScriptSignal): Signal
+function Signal.Wrap(rbxScriptSignal: RBXScriptSignal)
 	if typeof(rbxScriptSignal) ~= "RBXScriptSignal" then
         error("Argument #1 to Signal.Wrap must be a RBXScriptSignal; got " .. typeof(rbxScriptSignal))
     end
 
-	local signal = SignalConstructor()
+	local signal = SignalConstructor() :: _Signal
 
 	signal._proxyHandler = rbxScriptSignal:Connect(function(...)
 		signal:Fire(...)
@@ -207,8 +263,8 @@ end
 	signal:Fire("Hello", 25)
 	```
 ]=]
-function Signal.Connect(self: _Signal, callback: (...any) -> (...any)): Connection
-	local connection = ConnectionConstructor(self, callback)
+function Signal.Connect(self: _Signal, callback: (...any) -> (...any))
+	local connection = ConnectionConstructor(self, callback) :: _Connection
 
 	if self._handlerListHead then
 		connection._next = self._handlerListHead
@@ -236,7 +292,7 @@ end
 	```
 ]=]
 function Signal.Once(self: _Signal, callback: (...any) -> (...any))
-	local connection: Connection
+	local connection
 	local done = false
 
 	connection = self:Connect(function(...)
@@ -247,18 +303,18 @@ function Signal.Once(self: _Signal, callback: (...any) -> (...any))
 		done = true
 		connection:Disconnect()
 		callback(...)
-	end)
+	end) :: _Connection
 
 	return connection
 end
 
 function Signal.GetConnections(self: _Signal)
-	local items = {}
+	local items: {Connection} = {}
 	local item = self._handlerListHead
 
 	while item do
-		table.insert(items, item)
-		item = item._next
+		table.insert(items, item :: _Connection)
+		item = (item :: _Connection)._next
 	end
 
 	return items
@@ -273,16 +329,16 @@ end
 	```
 ]=]
 function Signal.DisconnectAll(self: _Signal)
-	local item = self._handlerListHead
+	if self._destroyOnLastConnection then self:Destroy() end
+
+	local item = self._handlerListHead :: _Connection
 
 	while item do
 		item.Connected = false
-		item = item._next
+		item = item._next :: _Connection
 	end
 
-	self._handlerListHead = nil
-
-    if self._destroyOnLastConnection then self:Destroy() end
+	self._handlerListHead = false
 end
 
 -- Signal:Fire(...) implemented by running the handler functions on the
@@ -301,19 +357,19 @@ end
 	```
 ]=]
 function Signal.Fire(self: _Signal, ...: any)
-	local item = self._handlerListHead
+	local item = self._handlerListHead :: _Connection
 
 	while item do
 		if item.Connected then
 			if not freeRunnerThread then
-				freeRunnerThread = coroutine.create(runEventHandlerInFreeThread)
+				freeRunnerThread = coroutine.create(runEventHandlerInFreeThread) :: any
                 -- Get the freeRunnerThread to the first yield
-				coroutine.resume(freeRunnerThread)
+				coroutine.resume(freeRunnerThread :: any)
 			end
 
-			task.spawn(freeRunnerThread, item._callback, ...)
+			task.spawn(freeRunnerThread :: any, item._callback, ...)
 		end
-		item = item._next
+		item = item._next :: _Connection
 	end
 end
 
@@ -326,11 +382,11 @@ end
 	```
 ]=]
 function Signal.FireDeferred(self: _Signal, ...: any)
-	local item = self._handlerListHead
+	local item = self._handlerListHead :: _Connection
 
 	while item do
 		task.defer(item._callback, ...)
-		item = item._next
+		item = item._next :: _Connection
 	end
 end
 
@@ -352,7 +408,7 @@ end
 function Signal.Wait(self: _Signal)
 	local waitingCoroutine = coroutine.running()
 
-	local connection: Connection
+	local connection
 	local done = false
 
 	connection = self:Connect(function(...)
@@ -383,7 +439,7 @@ end
 function Signal.Destroy(self: _Signal)
 	self:DisconnectAll()
 
-	local proxyHandler = rawget(self, "_proxyHandler")
+	local proxyHandler = rawget(self :: {}, "_proxyHandler")
 
 	if proxyHandler then
 		proxyHandler:Disconnect()
@@ -399,37 +455,5 @@ setmetatable(Signal, {
 		error(("Attempt to set Signal::%s (not a valid member)"):format(tostring(key)), 2)
 	end,
 })
-
--->> Connection classes
-export type Connection = ConnectionMethods & ConnectionProperties
-export type _Connection = ConnectionMethods & _ConnectionProperties
-
--->> Connection methods
-export type ConnectionMethods = typeof(Connection)
-
--->> Connection properties
-export type ConnectionProperties = {
-    Connected: boolean
-}
-export type _ConnectionProperties = ConnectionProperties & {
-    _signal: Signal,
-    _callback: (...any) -> (...any),
-    _next: boolean
-}
-
--->> Signal classes
-export type Signal = SignalMethods & SignalProperties
-export type _Signal = SignalMethods & _SignalProperties
-
--->> Signal methods
-export type SignalMethods = typeof(Signal)
-
--->> Signal properties
-export type SignalProperties = {}
-export type _SignalProperties = SignalProperties & {
-    _handlerListHead: Connection | false,
-    _proxyHandler: RBXScriptConnection?,
-    _destroyOnLastConnection: true?
-}
 
 return SignalConstructor
