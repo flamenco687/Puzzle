@@ -59,7 +59,9 @@ function QueryResultMetatable.__iter(self: _QueryResult)
 end
 
 type QueryResultCache = {
-	[string]: QueryResult | _QueryResult
+	[_World]: {
+		[string]: QueryResult | _QueryResult
+	}
 }
 
 local QueryResultCache: QueryResultCache = {}
@@ -69,14 +71,12 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 	local queryResultId = self._queryResultId .. "-"
 
 	for index, assembler in without do
-		if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
-			error("Without() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
-		end
+		if not Types.Assembler(assembler) then error("Without() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
 	if QueryResultCache[queryResultId] then
-		return QueryResultCache[queryResultId]
+		return QueryResultCache[self._world][queryResultId]
 	end
 
 	local properties: _QueryResultProperties = {
@@ -88,7 +88,7 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 
 	local queryResultWithout: _QueryResult = setmetatable(properties, QueryResultMetatable) :: any
 
-	QueryResultCache[queryResultId] = queryResultWithout
+	QueryResultCache[self._world][queryResultId] = queryResultWithout
 
 	return queryResultWithout :: QueryResult
 end
@@ -98,14 +98,12 @@ local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>):
 	local queryResultId = ""
 
 	for index, assembler in with do
-		if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
-			error("Query() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 3)
-		end
+		if not Types.Assembler(assembler) then error("Query() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 3) end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
-	if QueryResultCache[queryResultId] then
-		return QueryResultCache[queryResultId]
+	if QueryResultCache[world][queryResultId] then
+		return QueryResultCache[world][queryResultId]
 	end
 
 	local properties: _QueryResultProperties = {
@@ -116,7 +114,7 @@ local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>):
 
 	local self: _QueryResult = setmetatable(properties, QueryResultMetatable) :: any
 
-	QueryResultCache[queryResultId] = self
+	QueryResultCache[world][queryResultId] = self
 
 	return self :: QueryResult
 end
@@ -130,7 +128,7 @@ export type World = {
 	Query: (self: World, ...Types.Assembler<any>) -> QueryResult,
 	SpawnAt: (self: World, id: number, ...Types.Component<any>) -> number,
 	Spawn: (self: World, ...Types.Component<any>) -> number,
-	Remove: (self: World, id: number) -> true,
+	Despawn: (self: World, id: number) -> true,
 	Get: (self: World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
 	Set: (self: World, id: number, ...Types.Component<any>) -> true
 }
@@ -151,7 +149,7 @@ export type _World = _WorldProperties & {
 	Query: (self: _World, ...Types.Assembler<any>) -> QueryResult,
 	SpawnAt: (self: _World, id: number, ...Types.Component<any>) -> number,
 	Spawn: (self: _World, ...Types.Component<any>) -> number,
-	Remove: (self: _World, id: number) -> true,
+	Despawn: (self: _World, id: number) -> true,
 	Get: (self: _World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
 	Set: (self: _World, id: number, ...Types.Component<any>) -> true
 }
@@ -183,7 +181,7 @@ function World.OnUpdate(self: _World, idOrAssembler: number | Types.Assembler<an
 
 	local index: number | string
 
-	if typeof(idOrAssembler) == "table" and (not getmetatable(idOrAssembler :: any) or not getmetatable(idOrAssembler :: any)._isAssembler) then
+	if typeof(idOrAssembler) == "table" and not Types.Assembler(idOrAssembler) then
 		error("OnUpdate() -> Argument #1 expected assembler, got "..typeof(index), 2)
 	else
 		index = tostring(idOrAssembler)
@@ -243,8 +241,8 @@ function World.Spawn(self: _World, ...: Types.Component<any>): number
 	return self:SpawnAt(self._nextId, ...)
 end
 
-function World.Remove(self: _World, id: number): true
-	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
+function World.Despawn(self: _World, id: number): true
+	if not t.number(id) then error("Despawn() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
 		self:_Update(component, id, self._storage[component][id], nil)
@@ -287,9 +285,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 
 	if assemblers then
 		for index, assembler in assemblers :: {Types.Assembler<any>} do
-			if not getmetatable(assembler :: any) or not getmetatable(assembler :: any)._isAssembler then
-				error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2)
-			end
+			if not Types.Assembler(assembler) then error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
 
 			local data = self._storage[tostring(assembler)][id];
 			(componentsToReturn :: {any})[index] = data
@@ -307,17 +303,34 @@ end
 
 function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 	if not t.number(id) then error("Set() -> Argument #1 expected number, got "..typeof(id), 2) end
-	if not Types.Components(...) then error("Set() -> Argument #2 expected components tuple, got "..typeof(...), 2) end
 
 	local components: {Types.Component<any>} = {...}
 
-	for _, component in components do
+	for index, component in components do
+		if not Types.Component(component) then error("Set() -> Argument #"..1 + index.." expected component, got "..typeof(component), 2) end
+
 		if not self._storage[component.name] then
 			self._storage[component.name] = {}
 		end
 
 		self:_Update(component.name, id, self._storage[component.name][id], component.data)
 		self._storage[component.name][id] = component.data
+	end
+
+	return true
+end
+
+function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): true
+	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
+
+	local assemblers: {Types.Assembler<any>} = {...}
+
+	for index, assembler in assemblers do
+		if not Types.Assembler(assembler) then error("Remove() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
+		if not self._storage[tostring(assembler)] then continue end
+
+		self:_Update(tostring(assembler), id, self._storage[tostring(assembler)][id], nil)
+		self._storage[tostring(assembler)][id] = nil
 	end
 
 	return true
@@ -334,6 +347,7 @@ local function Constructor(): World
 	local self: _World = setmetatable(properties, Metatable) :: any
 
 	SignalCache[self] = {}
+	QueryResultCache[self] = {}
 
 	return self :: World
 end

@@ -22,6 +22,10 @@ Types.Components = t.tuple(Types.Component)
 
 export type Assembler<T> = (data: T) -> Component<T>
 
+function Types.Assembler(assembler: any): boolean
+	if getmetatable(assembler :: any) and getmetatable(assembler :: any)._isAssembler then return true else return false end
+end
+
 -->> Storage
 
 export type Storage = {
@@ -29,7 +33,5 @@ export type Storage = {
 		[number]: any --> Data per Id
 	}
 }
-
-Types.Storage = t.interface({ [t.string] = t.array(t.any) })
 
 return Types
