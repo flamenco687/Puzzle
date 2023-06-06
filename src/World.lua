@@ -75,7 +75,7 @@ function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): Que
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
-	if QueryResultCache[queryResultId] then
+	if QueryResultCache[self._world][queryResultId] then
 		return QueryResultCache[self._world][queryResultId]
 	end
 
