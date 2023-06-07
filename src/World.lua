@@ -182,7 +182,7 @@ function World.OnChange(self: _World, idOrAssembler: number | Types.Assembler<an
 
 	local index: number | string
 
-	if typeof(idOrAssembler) == "table" and not Types.Assembler(idOrAssembler) then
+	if type(idOrAssembler) == "table" and not Types.Assembler(idOrAssembler) then
 		error("OnChange() -> Argument #1 expected assembler, got "..typeof(index), 2)
 	else
 		index = tostring(idOrAssembler)
@@ -246,12 +246,14 @@ function World.Despawn(self: _World, id: number): true
 	if not t.number(id) then error("Despawn() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
-		self:_NotifyOfChange(component, id, self._storage[component][id], nil)
+		local oldValue = self._storage[component][id]
 		self._storage[component][id] = nil
 
 		if #self._storage[component] == 0 then
 			self._storage[component] = nil
 		end
+
+		self:_NotifyOfChange(component, id, oldValue, nil)
 	end
 
 	self._size -= 1
@@ -315,8 +317,10 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>)
 			self._storage[component.name] = {}
 		end
 
-		self:_NotifyOfChange(component.name, id, self._storage[component.name][id], component.data)
+		local oldValue = self._storage[component.name][id]
 		self._storage[component.name][id] = component.data
+
+		self:_NotifyOfChange(component.name, id, oldValue, self._storage[component.name][id])
 	end
 end
 
