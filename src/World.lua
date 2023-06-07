@@ -6,6 +6,7 @@ local t = require(script.Parent.Parent.t)
 local Signal = require(script.Parent.Signal)
 
 local Types = require(script.Parent.Types)
+local None = require(script.Parent.None)
 
 --->> QueryResult
 
@@ -123,7 +124,7 @@ end
 
 export type World = {
 	-->> Public methods
-	OnUpdate: (self: World, index: number | Types.Assembler<any>) -> Signal.Signal,
+	OnChange: (self: World, index: number | Types.Assembler<any>) -> Signal.Signal,
 	Has: (self: World, id: number) -> boolean,
 	Query: (self: World, ...Types.Assembler<any>) -> QueryResult,
 	SpawnAt: (self: World, id: number, ...Types.Component<any>) -> number,
@@ -142,9 +143,9 @@ type _WorldProperties = {
 
 export type _World = _WorldProperties & {
 	-->> Private methods
-	_Update: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
+	_NotifyOfChange: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
 	-->> Public methods
-	OnUpdate: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
+	OnChange: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
 	Has: (self: _World, id: number) -> boolean,
 	Query: (self: _World, ...Types.Assembler<any>) -> QueryResult,
 	SpawnAt: (self: _World, id: number, ...Types.Component<any>) -> number,
@@ -167,7 +168,7 @@ local SignalCache: SignalCache = {}
 
 -->> Private methods
 
-function World._Update(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
+function World._NotifyOfChange(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
 	local componentSignal, entitySignal = SignalCache[self][component], SignalCache[self][id]
 
 	if componentSignal then componentSignal:Fire(id, oldValue, newValue) end
@@ -176,13 +177,13 @@ end
 
 -->> Publich methods
 
-function World.OnUpdate(self: _World, idOrAssembler: number | Types.Assembler<any>): Signal.Signal
-	if not t.union(t.number, t.table)(idOrAssembler) then error("OnUpdate() -> Argument #1 expected number or assembler, got "..typeof(idOrAssembler), 2) end
+function World.OnChange(self: _World, idOrAssembler: number | Types.Assembler<any>): Signal.Signal
+	if not t.union(t.number, t.table)(idOrAssembler) then error("OnChange() -> Argument #1 expected number or assembler, got "..typeof(idOrAssembler), 2) end
 
 	local index: number | string
 
 	if typeof(idOrAssembler) == "table" and not Types.Assembler(idOrAssembler) then
-		error("OnUpdate() -> Argument #1 expected assembler, got "..typeof(index), 2)
+		error("OnChange() -> Argument #1 expected assembler, got "..typeof(index), 2)
 	else
 		index = tostring(idOrAssembler)
 	end
@@ -215,7 +216,7 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): num
 		end
 
 		self._storage[component.name][id] = component.data
-		self:_Update(component.name, id, nil, component.data)
+		self:_NotifyOfChange(component.name, id, nil, component.data)
 	end
 
 	if self._missing[id] then
@@ -245,7 +246,7 @@ function World.Despawn(self: _World, id: number): true
 	if not t.number(id) then error("Despawn() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
-		self:_Update(component, id, self._storage[component][id], nil)
+		self:_NotifyOfChange(component, id, self._storage[component][id], nil)
 		self._storage[component][id] = nil
 
 		if #self._storage[component] == 0 then
@@ -286,6 +287,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 	if assemblers then
 		for index, assembler in assemblers :: {Types.Assembler<any>} do
 			if not Types.Assembler(assembler) then error("Get() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
+			if not self._storage[tostring(assembler)] then return nil :: any end
 
 			local data = self._storage[tostring(assembler)][id];
 			(componentsToReturn :: {any})[index] = data
@@ -301,7 +303,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 	end
 end
 
-function World.Set(self: _World, id: number, ...: Types.Component<any>): true
+function World.Set(self: _World, id: number, ...: Types.Component<any>)
 	if not t.number(id) then error("Set() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	local components: {Types.Component<any>} = {...}
@@ -313,11 +315,35 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): true
 			self._storage[component.name] = {}
 		end
 
-		self:_Update(component.name, id, self._storage[component.name][id], component.data)
+		self:_NotifyOfChange(component.name, id, self._storage[component.name][id], component.data)
 		self._storage[component.name][id] = component.data
 	end
+end
 
-	return true
+function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any}>)
+	if not t.number(id) then error("Update() -> Argument #1 expected number, got "..typeof(id), 2) end
+
+	local components: {Types.Component<{[any]: any}>} = {...}
+
+	for index, component in components do
+		if not Types.TableComponent(component) then error("Set() -> Argument #"..1 + index.." expected component, got "..typeof(component), 2) end
+
+		if not self._storage[component.name] then
+			self._storage[component.name] = {}
+		end
+
+		local oldValue = self._storage[component.name][id]
+
+		if type(self._storage[component.name][id]) == "table" then
+			for key, value in component.data do
+				self._storage[component.name][id][key] = if value == None then nil else value
+			end
+		else
+			self._storage[component.name][id] = component.data
+		end
+
+		self:_NotifyOfChange(component.name, id, oldValue, self._storage[component.name][id])
+	end
 end
 
 function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): true
@@ -329,7 +355,7 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): true
 		if not Types.Assembler(assembler) then error("Remove() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
 		if not self._storage[tostring(assembler)] then continue end
 
-		self:_Update(tostring(assembler), id, self._storage[tostring(assembler)][id], nil)
+		self:_NotifyOfChange(tostring(assembler), id, self._storage[tostring(assembler)][id], nil)
 		self._storage[tostring(assembler)][id] = nil
 	end
 
