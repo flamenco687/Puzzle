@@ -131,7 +131,9 @@ export type World = {
 	Spawn: (self: World, ...Types.Component<any>) -> number,
 	Despawn: (self: World, id: number) -> true,
 	Get: (self: World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
-	Set: (self: World, id: number, ...Types.Component<any>) -> true
+	Set: (self: World, id: number, ...Types.Component<any>) -> (),
+	Update: (self: World, id: number, ...Types.Component<{[any]: any}>) -> (),
+	Remove: (self: World, id: number, ...Types.Assembler<any>) -> (),
 }
 
 type _WorldProperties = {
@@ -152,7 +154,7 @@ export type _World = _WorldProperties & {
 	Spawn: (self: _World, ...Types.Component<any>) -> number,
 	Despawn: (self: _World, id: number) -> true,
 	Get: (self: _World, id: number, ...Types.Assembler<any>?) -> (...any | Types.Dictionary<any>),
-	Set: (self: _World, id: number, ...Types.Component<any>) -> true
+	Set: (self: _World, id: number, ...Types.Component<any>) -> true,
 }
 
 local World = {}
@@ -350,7 +352,7 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 	end
 end
 
-function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): true
+function World.Remove(self: _World, id: number, ...: Types.Assembler<any>)
 	if not t.number(id) then error("Remove() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	local assemblers: {Types.Assembler<any>} = {...}
@@ -362,8 +364,6 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): true
 		self:_NotifyOfChange(tostring(assembler), id, self._storage[tostring(assembler)][id], nil)
 		self._storage[tostring(assembler)][id] = nil
 	end
-
-	return true
 end
 
 local function Constructor(): World
