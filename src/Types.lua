@@ -1,5 +1,3 @@
-local t = require(script.Parent.Parent.t)
-
 local Types = {}
 
 export type Dictionary<Value> = {
@@ -10,18 +8,18 @@ export type Map<Key, Value> = {
 	[Key]: Value
 }
 
+function Types.Component(value: any, dataIsTable: boolean?): true?
+	if type(value) == "table" and (if not dataIsTable then value.data ~= nil else type(value.data) == "table") and type(value.name) == "string" then
+		return true
+	end
+end
+
 -->> Components
 
 export type Component<T> = {
 	data: T,
 	name: string
 }
-
-Types.Component = t.interface({data = t.any, name = t.string})
-Types.TableComponent = t.interface({data = t.table, name = t.string})
-
-Types.Components = t.tuple(Types.Component)
-Types.TableComponents = t.tuple(Types.TableComponent)
 
 export type Assembler<T> = (data: T) -> Component<T>
 

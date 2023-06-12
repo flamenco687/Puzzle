@@ -2,8 +2,6 @@
 
 -->> Modules
 
-local t = require(script.Parent.Parent.t)
-
 local Types = require(script.Parent.Types)
 local None = require(script.Parent.None)
 
@@ -20,7 +18,7 @@ function Assembler.__tostring(self: _Assembler): string
 end
 
 local function Constructor<T>(name: string): Assembler<T>
-	if not t.string(name) then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
+	if not type(name) == "string" then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
 
 	local self: _Assembler = {
 		_name = name,

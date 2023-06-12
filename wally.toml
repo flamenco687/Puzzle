@@ -16,6 +16,3 @@ include = ["src", "src/*", "default.project.json", "wally.toml"]
 
 realm = "shared"
 registry = "https://github.com/UpliftGames/wally-index"
-
-[dependencies]
-t = "osyrisrblx/t@3.0.0"
