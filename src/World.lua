@@ -66,14 +66,20 @@ type QueryResultCache = {
 
 local QueryResultCache: QueryResultCache = {}
 
-function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): QueryResult
-	local without: {Types.Assembler<any>} = {...}
-	local queryResultId = self._queryResultId .. "-"
+local function SearchQueryResultId(currentId: string, assemblers: {Types.Assembler<any>})
+	local queryResultId = currentId
 
-	for index, assembler in without do
-		if not Types.Assembler(assembler) then error("Without() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
+	for index, assembler in assemblers do
+		if not Types.Assembler(assembler) then error("SearchQueryResultId() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 1) end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
+
+	return queryResultId
+end
+
+function QueryResult.Without(self: _QueryResult, ...: Types.Assembler<any>): QueryResult
+	local without: {Types.Assembler<any>} = {...}
+	local queryResultId = SearchQueryResultId(self._queryResultId .. "-", without)
 
 	if QueryResultCache[self._world][queryResultId] then
 		return QueryResultCache[self._world][queryResultId]
@@ -95,12 +101,7 @@ end
 
 local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>): QueryResult
 	local with: {Types.Assembler<any>} = {...}
-	local queryResultId = ""
-
-	for index, assembler in with do
-		if not Types.Assembler(assembler) then error("Query() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 3) end
-		queryResultId = queryResultId .. tostring(assembler)
-	end
+	local queryResultId = SearchQueryResultId("", with)
 
 	if QueryResultCache[world][queryResultId] then
 		return QueryResultCache[world][queryResultId]
@@ -145,6 +146,7 @@ type _WorldProperties = {
 export type _World = _WorldProperties & {
 	-->> Private methods
 	_NotifyOfChange: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
+	_UpdateStorage: (self: _World, component: string, id: number, value: any) -> (),
 	-->> Public methods
 	OnChange: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
 	Has: (self: _World, id: number) -> boolean,
@@ -205,6 +207,17 @@ function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
 	return QueryResultConstructor(self, ...)
 end
 
+function World._UpdateStorage(self: _World, component: string, id: number, value: any)
+	if not self._storage[component] and value ~= nil then
+		self._storage[component] = {}
+	end
+
+	local oldValue = self._storage[component][id]
+
+	self._storage[component][id] = value
+	self:_NotifyOfChange(component, id, oldValue, value)
+end
+
 function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
 	if not type(id) == "number" then error("SpawnAt() -> Argument #1 expected number, got "..typeof(id), 2) end
 
@@ -212,13 +225,7 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): num
 
 	for index, component in components do
 		if not Types.Component(component) then error("SpawnAt() -> Argument #"..1 + index.." expected component, got "..typeof(component), 2) end
-
-		if not self._storage[component.name] then
-			self._storage[component.name] = {}
-		end
-
-		self._storage[component.name][id] = component.data
-		self:_NotifyOfChange(component.name, id, nil, component.data)
+		self:_UpdateStorage(component.name, id, component.data)
 	end
 
 	if self._missing[id] then
@@ -248,14 +255,11 @@ function World.Despawn(self: _World, id: number): true
 	if not type(id) == "number" then error("Despawn() -> Argument #1 expected number, got "..typeof(id), 2) end
 
 	for component in self._storage do
-		local oldValue = self._storage[component][id]
-		self._storage[component][id] = nil
+		self:_UpdateStorage(component, id, nil)
 
 		if #self._storage[component] == 0 then
 			self._storage[component] = nil
 		end
-
-		self:_NotifyOfChange(component, id, oldValue, nil)
 	end
 
 	self._size -= 1
@@ -314,15 +318,7 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>)
 
 	for index, component in components do
 		if not Types.Component(component) then error("Set() -> Argument #"..1 + index.." expected component, got "..typeof(component), 2) end
-
-		if not self._storage[component.name] then
-			self._storage[component.name] = {}
-		end
-
-		local oldValue = self._storage[component.name][id]
-		self._storage[component.name][id] = component.data
-
-		self:_NotifyOfChange(component.name, id, oldValue, self._storage[component.name][id])
+		self:_UpdateStorage(component.name, id, component.data)
 	end
 end
 
@@ -334,21 +330,13 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 	for index, component in components do
 		if not Types.Component(component, true) then error("Set() -> Argument #"..1 + index.." expected component, got "..typeof(component), 2) end
 
-		if not self._storage[component.name] then
-			self._storage[component.name] = {}
-		end
-
-		local oldValue = self._storage[component.name][id]
-
 		if type(self._storage[component.name][id]) == "table" then
-			for key, value in component.data do
-				self._storage[component.name][id][key] = if value == None then nil else value
+			for _, value in component.data do
+				self:_UpdateStorage(component.name, id, if value == None then nil else value)
 			end
 		else
-			self._storage[component.name][id] = component.data
+			self:_UpdateStorage(component.name, id, component.data)
 		end
-
-		self:_NotifyOfChange(component.name, id, oldValue, self._storage[component.name][id])
 	end
 end
 
@@ -360,13 +348,11 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>)
 	for index, assembler in assemblers do
 		if not Types.Assembler(assembler) then error("Remove() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 2) end
 		if not self._storage[tostring(assembler)] then continue end
-
-		self:_NotifyOfChange(tostring(assembler), id, self._storage[tostring(assembler)][id], nil)
-		self._storage[tostring(assembler)][id] = nil
+		self:_UpdateStorage(tostring(assembler), id, nil)
 	end
 end
 
-local function Constructor(): World
+local function WorldConstructor(): World
 	local properties: _WorldProperties = {
 		_storage = {},
 		_missing = {},
@@ -382,4 +368,4 @@ local function Constructor(): World
 	return self :: World
 end
 
-return Constructor
+return WorldConstructor
