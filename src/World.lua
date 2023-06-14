@@ -141,7 +141,7 @@ export type World = {
 }
 
 type DestroyProcedures = {
-	[string]: (object: any) -> ()
+	[string]: (object: any, world: _World?) -> ()
 }
 
 type _WorldProperties = {
@@ -155,7 +155,7 @@ type _WorldProperties = {
 export type _World = _WorldProperties & {
 	-- Private methods
 	_FireListeners: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
-	_Destroy: (object: any) -> (),
+	_Destroy: (self: _World, object: any) -> (),
 	_Set: (self: _World, component: string, id: number, value: any) -> (),
 	-- Public methods
 	OnChange: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
@@ -192,7 +192,7 @@ end
 
 function World._Destroy(self: _World, object: any): ()
 	if self._destroyProcedures[typeof(object)] then
-		self._destroyProcedures[typeof(object)]()
+		self._destroyProcedures[typeof(object)](object, self :: _World?)
 	end
 end
 
@@ -202,7 +202,7 @@ function World._Set(self: _World, component: string, id: number, value: any)
 	end
 
 	local oldValue = self._storage[component][id]
-	self._Destroy(self._storage[component][id])
+	self:_Destroy(self._storage[component][id])
 
 	self._storage[component][id] = value
 	self:_FireListeners(component, id, oldValue, value)
@@ -220,7 +220,7 @@ function World.Has(self: _World, id: number): boolean
 end
 
 function World.OnChange(self: _World, idOrAssembler: number | Types.Assembler<any>): Signal.Signal
-	if type(idOrAssembler) ~= ("number" or "table") then error("OnChange() -> Argument #1 expected number or assembler, got " .. typeof(idOrAssembler), 2) end
+	if type(idOrAssembler) ~= "number" and type(idOrAssembler) ~= "table" then error("OnChange() -> Argument #1 expected number or assembler, got " .. typeof(idOrAssembler), 2) end
 
 	local index: number | string
 
@@ -361,7 +361,7 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 			local oldValue = self._storage[component.name][id]
 
 			for key, value in component.data do
-				self._Destroy(self._storage[component.name][id][key])
+				self:_Destroy(self._storage[component.name][id][key])
 				self._storage[component.name][id][key] = value
 			end
 
@@ -384,14 +384,14 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): ()
 	end
 end
 
-local function DestroyTable(object: {[any]: any})
+local function DestroyTable(object: {[any]: any}, world: _World)
 	if type(object.Destroy) == "function" then
 		object:Destroy()
 	elseif type(object.Disconnect) == "function" then
 		object:Disconnect()
 	else
-		for _ in object do
-			DestroyTable(object)
+		for _, child in object do
+			world:_Destroy(child)
 		end
 		setmetatable(object, nil)
 	end
