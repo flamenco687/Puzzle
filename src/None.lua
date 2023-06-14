@@ -1,1 +1,1 @@
-return { None = true }
+return { None = true } -- Unique symbol for identifying component data that represents 'nil'

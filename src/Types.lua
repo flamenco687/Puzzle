@@ -1,5 +1,7 @@
 local Types = {}
 
+--> Generics
+
 export type Dictionary<Value> = {
     [string]: Value
 }
@@ -8,13 +10,13 @@ export type Map<Key, Value> = {
 	[Key]: Value
 }
 
-function Types.Component(value: any, dataIsTable: boolean?): true?
+function Types.Component(value: any, dataIsTable: boolean?): boolean
 	if type(value) == "table" and (if not dataIsTable then value.data ~= nil else type(value.data) == "table") and type(value.name) == "string" then
-		return true
+		return true else return false
 	end
 end
 
--->> Components
+--> Components & Assemblers
 
 export type Component<T> = {
 	data: T,
@@ -24,14 +26,14 @@ export type Component<T> = {
 export type Assembler<T> = (data: T) -> Component<T>
 
 function Types.Assembler(assembler: any): boolean
-	if getmetatable(assembler :: any) and getmetatable(assembler :: any)._isAssembler then return true else return false end
+	if getmetatable(assembler) and getmetatable(assembler)._isAssembler then return true else return false end
 end
 
--->> Storage
+--> Storage
 
 export type Storage = {
-	[string]: { --> Ids per Component
-		[number]: any --> Data per Id
+	[string]: { --> Ids per component
+		[number]: any --> Data per id
 	}
 }
 
