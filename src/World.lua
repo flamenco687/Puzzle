@@ -140,7 +140,12 @@ export type World = {
 	Remove: (self: World, id: number, ...Types.Assembler<any>) -> (),
 }
 
+type DestroyProcedures = {
+	[string]: (object: any) -> ()
+}
+
 type _WorldProperties = {
+	_destroyProcedures: DestroyProcedures,
 	_storage: Types.Storage,
 	_missing: {true},
 	_nextId: number,
@@ -150,6 +155,7 @@ type _WorldProperties = {
 export type _World = _WorldProperties & {
 	-- Private methods
 	_FireListeners: (self: _World, component: string, id: number, oldValue: any?, newValue: any?) -> (),
+	_Destroy: (object: any) -> (),
 	_Set: (self: _World, component: string, id: number, value: any) -> (),
 	-- Public methods
 	OnChange: (self: _World, index: number | Types.Assembler<any>) -> Signal.Signal,
@@ -184,12 +190,19 @@ function World._FireListeners(self: _World, component: string, id: number, oldVa
 	if entitySignal then entitySignal:Fire(component, oldValue, newValue) end
 end
 
+function World._Destroy(self: _World, object: any): ()
+	if self._destroyProcedures[typeof(object)] then
+		self._destroyProcedures[typeof(object)]()
+	end
+end
+
 function World._Set(self: _World, component: string, id: number, value: any)
 	if not self._storage[component] and value ~= nil then
 		self._storage[component] = {}
 	end
 
 	local oldValue = self._storage[component][id]
+	self._Destroy(self._storage[component][id])
 
 	self._storage[component][id] = value
 	self:_FireListeners(component, id, oldValue, value)
@@ -344,10 +357,15 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 	for index, component in components do
 		if not Types.Component(component, true) then error("Set() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
 
-		if type(self._storage[component.name][id]) == "table" then
-			for _, value in component.data do
-				self:_Set(component.name, id, if value == None then nil else value)
+		if self._storage[component.name] and type(self._storage[component.name][id]) == "table" then
+			local oldValue = self._storage[component.name][id]
+
+			for key, value in component.data do
+				self._Destroy(self._storage[component.name][id][key])
+				self._storage[component.name][id][key] = value
 			end
+
+			self:_FireListeners(component.name, id, oldValue, self._storage[component.name][id])
 		else
 			self:_Set(component.name, id, component.data)
 		end
@@ -366,8 +384,40 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): ()
 	end
 end
 
-local function WorldConstructor(): World
+local function DestroyTable(object: {[any]: any})
+	if type(object.Destroy) == "function" then
+		object:Destroy()
+	elseif type(object.Disconnect) == "function" then
+		object:Disconnect()
+	else
+		for _ in object do
+			DestroyTable(object)
+		end
+		setmetatable(object, nil)
+	end
+end
+
+local function WorldConstructor(destroyProcedures: DestroyProcedures?): World
 	local properties: _WorldProperties = {
+		_destroyProcedures = if destroyProcedures then destroyProcedures else {
+			["table"] = DestroyTable,
+
+			["thread"] = function(object: thread)
+				task.cancel(object)
+			end,
+
+			["function"] = function(object: (...any) -> ...any)
+				object()
+			end,
+
+			["Instance"] = function(object: Instance)
+				object:Destroy()
+			end,
+
+			["RBXScriptConnection"] = function(object: RBXScriptConnection)
+				object:Disconnect()
+			end
+		},
 		_storage = {},
 		_missing = {},
 		_nextId = 1,
