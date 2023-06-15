@@ -26,7 +26,7 @@ return function ()
 
             describe("_name", function()
                 it("should equal: assembler's name", function()
-                    expect((assembler :: Assembler._Assembler)._name).to.equal(name)
+                    expect((assembler :: Assembler._Assembler<any>)._name).to.equal(name)
                 end)
             end)
         end)

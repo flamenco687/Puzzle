@@ -1,39 +1,38 @@
 --!strict
 
--->> Modules
-
-local t = require(script.Parent.Parent.t)
+--> Modules
 
 local Types = require(script.Parent.Types)
 local None = require(script.Parent.None)
 
--->> Assembler
+--> Assembler
+
+export type Assembler<T> = (data: T) -> Types.Component<T> -- Assembler is also exported in Types for accessiblity reasons
+
+export type _Assembler<T> = {
+	_name: string
+}
 
 local Assembler = { _isAssembler = true }
 
-function Assembler.__call<T>(self: _Assembler, data: T): Types.Component<T>
+--> Assembler: Metamethods
+
+function Assembler.__call<T>(self: _Assembler<T>, data: T): Types.Component<T>
 	return {data = if data == nil then None :: any else data, name = self._name}
 end
 
-function Assembler.__tostring(self: _Assembler): string
+function Assembler.__tostring<T>(self: _Assembler<T>): string
 	return self._name
 end
 
 local function Constructor<T>(name: string): Assembler<T>
-	if not t.string(name) then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
+	if type(name) ~= "string" then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
 
-	local self: _Assembler = {
+	local self: _Assembler<T> = {
 		_name = name,
-	} 
+	}
 
 	return setmetatable(self, Assembler) :: any
 end
-
-export type Assembler<T> = (data: T) -> Types.Component<T> --> Assembler is exported twice in different modules for easier access
-
--->> World private properties
-export type _Assembler = {
-	_name: string
-}
 
 return Constructor

@@ -1,6 +1,7 @@
 --!strict
 
 return {
+    Signal = require(script.Signal),
     Types = require(script.Types),
     None = require(script.None),
 

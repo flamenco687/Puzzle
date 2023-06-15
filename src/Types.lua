@@ -1,6 +1,6 @@
-local t = require(script.Parent.Parent.t)
-
 local Types = {}
+
+--> Generics
 
 export type Dictionary<Value> = {
     [string]: Value
@@ -10,30 +10,30 @@ export type Map<Key, Value> = {
 	[Key]: Value
 }
 
--->> Components
+function Types.Component(value: any, dataIsTable: boolean?): boolean
+	if type(value) == "table" and (if not dataIsTable then value.data ~= nil else type(value.data) == "table") and type(value.name) == "string" then
+		return true else return false
+	end
+end
+
+--> Components & Assemblers
 
 export type Component<T> = {
 	data: T,
 	name: string
 }
 
-Types.Component = t.interface({data = t.any, name = t.string})
-Types.TableComponent = t.interface({data = t.table, name = t.string})
-
-Types.Components = t.tuple(Types.Component)
-Types.TableComponents = t.tuple(Types.TableComponent)
-
 export type Assembler<T> = (data: T) -> Component<T>
 
 function Types.Assembler(assembler: any): boolean
-	if getmetatable(assembler :: any) and getmetatable(assembler :: any)._isAssembler then return true else return false end
+	if getmetatable(assembler) and getmetatable(assembler)._isAssembler then return true else return false end
 end
 
--->> Storage
+--> Storage
 
 export type Storage = {
-	[string]: { --> Ids per Component
-		[number]: any --> Data per Id
+	[string]: { --> Ids per component
+		[number]: any --> Data per id
 	}
 }
 
