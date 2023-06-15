@@ -5,7 +5,6 @@
 local Signal = require(script.Parent.Signal)
 
 local Types = require(script.Parent.Types)
-local None = require(script.Parent.None)
 
 --> QueryResult
 
@@ -124,7 +123,7 @@ local function QueryResultConstructor(world: _World, ...: Types.Assembler<any>):
 	return self :: QueryResult
 end
 
----> World
+--> World
 
 export type World = {
 	-- Public methods
@@ -140,15 +139,58 @@ export type World = {
 	Remove: (self: World, id: number, ...Types.Assembler<any>) -> (),
 }
 
+--[=[
+	@within World
+	@type DestroyProcedures { [string]: (object: any, world: _World?) -> () }
+]=]
 type DestroyProcedures = {
 	[string]: (object: any, world: _World?) -> ()
 }
 
 type _WorldProperties = {
+	--[=[
+		@within World
+		@readonly
+		@private
+
+		@prop _destroyProcedures DestroyProcedures
+	]=]
 	_destroyProcedures: DestroyProcedures,
+
+	--[=[
+		@within World
+		@readonly
+		@private
+
+		@prop _storage Types.Storage
+	]=]
 	_storage: Types.Storage,
-	_missing: {true},
+
+	--[=[
+		@within World
+		@readonly
+		@private
+
+		@prop _missing {true?}
+	]=]
+	_missing: {true?},
+
+	--[=[
+		@within World
+		@readonly
+		@private
+
+		@prop _nextId number
+	]=]
 	_nextId: number,
+
+	--[=[
+		@within World
+		@readonly
+		@private
+
+		@prop _size number
+	]=]
 	_size: number
 }
 
@@ -170,6 +212,11 @@ export type _World = _WorldProperties & {
 	Remove: (self: _World, id: number, ...Types.Assembler<any>) -> (),
 }
 
+--[=[
+	@class World
+
+	Main world class
+]=]
 local World = {}
 local Metatable = { __index = World, _isWorld = true } -- Avoids inserting metamethods inside the methods table
 
@@ -183,6 +230,18 @@ local SignalCache: SignalCache = {}
 
 --> World: Private methods
 
+--[=[
+	@within World
+	@private
+
+	Fires Signal listeners for a component, and subsequentialy, an entity change.
+
+	@method _FireListeners
+	@param component string
+	@param id number
+	@param oldValue any?
+	@param newValue any?
+]=]
 function World._FireListeners(self: _World, component: string, id: number, oldValue: any?, newValue: any?)
 	local componentSignal, entitySignal = SignalCache[self][component], SignalCache[self][id]
 
@@ -190,13 +249,33 @@ function World._FireListeners(self: _World, component: string, id: number, oldVa
 	if entitySignal then entitySignal:Fire(component, oldValue, newValue) end
 end
 
+--[=[
+	@within World
+	@private
+
+	Handles destroy procedures for the given object. This object usually is the old value of a component.
+
+	@method _Destroy
+	@param object any
+]=]
 function World._Destroy(self: _World, object: any): ()
 	if self._destroyProcedures[typeof(object)] then
 		self._destroyProcedures[typeof(object)](object, self :: _World?)
 	end
 end
 
-function World._Set(self: _World, component: string, id: number, value: any)
+--[=[
+	@within World
+	@private
+
+	Internally sets a new component value for the given entity, handling destroys and signal firing in the process.
+
+	@method _Set
+	@param component string
+	@param id number
+	@param value any
+]=]
+function World._Set(self: _World, component: string, id: number, value: any): ()
 	if not self._storage[component] and value ~= nil then
 		self._storage[component] = {}
 	end
@@ -210,15 +289,42 @@ end
 
 --> World: Public methods
 
+--[=[
+	@within World
+
+	Returns a QueryResult based on the given assemblers.
+
+	@method Query
+	@param ... Types.Assembler<any>
+	@return QueryResult
+]=]
 function World.Query(self: _World, ...: Types.Assembler<any>): QueryResult
 	return QueryResultConstructor(self, ...)
 end
 
+--[=[
+	@within World
+
+	Checks if the world contains the requested entity or not.
+
+	@method Has
+	@param id number
+	@return boolean
+]=]
 function World.Has(self: _World, id: number): boolean
 	if type(id) ~= "number" then error("Has() -> Argument #1 expected number, got " .. typeof(id), 2) end
 	return if id < self._nextId and id > 0 and not self._missing[id] then true else false
 end
 
+--[=[
+	@within World
+
+	Returns a Signal that fires its listeners on component or entity changes.
+
+	@method OnChange
+	@param idOrAssembler number | Types.Assembler<any>
+	@return Signal
+]=]
 function World.OnChange(self: _World, idOrAssembler: number | Types.Assembler<any>): Signal.Signal
 	if type(idOrAssembler) ~= "number" and type(idOrAssembler) ~= "table" then error("OnChange() -> Argument #1 expected number or assembler, got " .. typeof(idOrAssembler), 2) end
 
@@ -237,6 +343,17 @@ function World.OnChange(self: _World, idOrAssembler: number | Types.Assembler<an
 	return SignalCache[self][index]
 end
 
+
+--[=[
+	@within World
+
+	Spawns an entity at the given position.
+
+	@method SpawnAt
+	@param id number
+	@param ... Types.Component<any>
+	@return number
+]=]
 function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): number
 	if type(id) ~= "number" then error("SpawnAt() -> Argument #1 expected number, got " .. typeof(id), 2) end
 	if self:Has(id) then error("SpawnAt() -> Desired entity (".. id ..") does already exist", 2) end
@@ -270,10 +387,28 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): num
 	return id
 end
 
+
+--[=[
+	@within World
+
+	Spawns an entity with the world's next id.
+
+	@method Spawn
+	@param ... Types.Component<any>
+	@return number
+]=]
 function World.Spawn(self: _World, ...: Types.Component<any>): number
 	return self:SpawnAt(self._nextId, ...)
 end
 
+--[=[
+	@within World
+
+	Despawns a given entity destroying all of its components.
+
+	@method Despawn
+	@param id number
+]=]
 function World.Despawn(self: _World, id: number): ()
 	if type(id) ~= "number" then error("Despawn() -> Argument #1 expected number, got " .. typeof(id), 2) end
 	if not self:Has(id) then error("Despawn() -> Desired entity (".. id ..") does not exist", 2) end
@@ -313,6 +448,16 @@ function World.Despawn(self: _World, id: number): ()
 	end
 end
 
+--[=[
+	@within World
+
+	Returns some or all of the components data from the desired entity.
+
+	@method Get
+	@param id number
+	@param ... Types.Assembler<any>? -- If set, the function will return a tuple of components in this order
+	@return ...any | Types.Dictionary<any>
+]=]
 function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any | Types.Dictionary<any>
 	if type(id) ~= "number" then error("Get() -> Argument #1 expected number, got " .. typeof(id), 2) end
 
@@ -338,6 +483,15 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 	end
 end
 
+--[=[
+	@within World
+
+	Sets a new value for the given components.
+
+	@method Set
+	@param id number
+	@param ... Types.Component<any>
+]=]
 function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
 	if type(id) ~= "number" then error("Set() -> Argument #1 expected number, got " .. typeof(id), 2) end
 
@@ -349,6 +503,15 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
 	end
 end
 
+--[=[
+	@within World
+
+	Updates existing table components with the new keys from the given components. If the table component does not already exist, this acts just as [World:Set]
+
+	@method Update
+	@param id number
+	@param ... Types.Component<{[any] : any}>
+]=]
 function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any}>): ()
 	if type(id) ~= "number" then error("Update() -> Argument #1 expected number, got " .. typeof(id), 2) end
 
@@ -372,6 +535,15 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 	end
 end
 
+--[=[
+	@within World
+
+	Removes the given components from the entity.
+
+	@method Update
+	@param id number
+	@param ... Types.Assembler<any>
+]=]
 function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): ()
 	if type(id) ~= "number" then error("Remove() -> Argument #1 expected number, got " .. typeof(id), 2) end
 
@@ -397,6 +569,15 @@ local function DestroyTable(object: {[any]: any}, world: _World)
 	end
 end
 
+--[=[
+	@within World
+
+	Constructs a new World.
+
+	@function WorldConstructor
+	@param destroyProcedures DestroyProcedures?
+	@return World
+]=]
 local function WorldConstructor(destroyProcedures: DestroyProcedures?): World
 	local properties: _WorldProperties = {
 		_destroyProcedures = if destroyProcedures then destroyProcedures else {

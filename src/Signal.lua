@@ -173,7 +173,7 @@ export type _Connection = _ConnectionProperties & {
 	Disconnect: (self: _Connection) -> (),
 }
 
---->> Signal
+-->> Signal
 
 export type Signal = {
 	Wrap: (rbxScriptSignal: RBXScriptSignal) -> (),
@@ -208,6 +208,7 @@ export type _Signal = _SignalProperties & {
 }
 
 --[=[
+	@within Signal
 	Constructs a new Signal
 
 	@return Signal
@@ -224,6 +225,7 @@ local function SignalConstructor(destroyOnLastConnection: true?): Signal
 end
 
 --[=[
+	@within Signal
 	Constructs a new Signal that wraps around an RBXScriptSignal.
 
 	@param rbxScriptSignal RBXScriptSignal -- Existing RBXScriptSignal to wrap
@@ -251,6 +253,7 @@ function Signal.Wrap(rbxScriptSignal: RBXScriptSignal)
 end
 
 --[=[
+	@within Signal
 	@param callback Connectioncallback
 	@return SignalConnection
 
@@ -277,6 +280,7 @@ function Signal.Connect(self: _Signal, callback: (...any) -> (...any))
 end
 
 --[=[
+	@within Signal
 	@param callback Connectioncallback
 	@return SignalConnection
 
@@ -323,6 +327,7 @@ end
 -- Disconnect all handlers. Since we use a linked list it suffices to clear the
 -- reference to the head handler.
 --[=[
+	@within Signal
 	Disconnects all connections from the signal.
 	```lua
 	signal:DisconnectAll()
@@ -346,6 +351,7 @@ end
 -- to us, that means that it yielded to the Roblox scheduler and has been taken
 -- over by Roblox scheduling, meaning we have to make a new coroutine runner.
 --[=[
+	@within Signal
 	@param ... any
 
 	Fire the signal, which will call all of the connected functions with the given arguments.
@@ -374,6 +380,7 @@ function Signal.Fire(self: _Signal, ...: any)
 end
 
 --[=[
+	@within Signal
 	@param ... any
 
 	Same as `Fire`, but uses `task.defer` internally & doesn't take advantage of thread reuse.
@@ -391,6 +398,7 @@ function Signal.FireDeferred(self: _Signal, ...: any)
 end
 
 --[=[
+	@within Signal
 	@return ... any
 	@yields
 
@@ -425,6 +433,7 @@ function Signal.Wait(self: _Signal)
 end
 
 --[=[
+	@within Signal
 	Cleans up the signal.
 
 	Technically, this is only necessary if the signal is created using
