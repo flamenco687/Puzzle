@@ -5,9 +5,13 @@ Puzzle.rbxlx
 *.rbxlx.lock
 *.rbxl.lock
 
-# Packages
+# Wally packages
 Packages
 wally.lock
+
+# Node modules
+node_modules
+package-lock.json
 
 # Test file used for quick troubleshooting
 tests/Test.*
