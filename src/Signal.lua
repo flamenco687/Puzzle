@@ -60,6 +60,7 @@ end
 
 --[=[
 	@within Signal
+
 	@interface SignalConnection
 	.Connected boolean
 	.Disconnect (SignalConnection) -> ()
@@ -130,6 +131,7 @@ setmetatable(Connection, {
 
 --[=[
 	@within Signal
+
 	@type Connectioncallback (...any) -> ()
 
 	A function connected to a signal.
@@ -173,7 +175,7 @@ export type _Connection = _ConnectionProperties & {
 	Disconnect: (self: _Connection) -> (),
 }
 
--->> Signal
+--> Signal
 
 export type Signal = {
 	Wrap: (rbxScriptSignal: RBXScriptSignal) -> (),
@@ -209,9 +211,12 @@ export type _Signal = _SignalProperties & {
 
 --[=[
 	@within Signal
-	Constructs a new Signal
 
+	@function Constructor
+	@param destroyOnLastConnection true?
 	@return Signal
+
+	Constructs a new Signal
 ]=]
 local function SignalConstructor(destroyOnLastConnection: true?): Signal
 	local properties: _SignalProperties = {
@@ -226,10 +231,12 @@ end
 
 --[=[
 	@within Signal
-	Constructs a new Signal that wraps around an RBXScriptSignal.
 
+	@function Wrap
 	@param rbxScriptSignal RBXScriptSignal -- Existing RBXScriptSignal to wrap
 	@return Signal
+
+	Constructs a new Signal that wraps around an RBXScriptSignal.
 
 	For example:
 	```lua
@@ -254,6 +261,8 @@ end
 
 --[=[
 	@within Signal
+
+	@method Connect
 	@param callback Connectioncallback
 	@return SignalConnection
 
@@ -281,6 +290,8 @@ end
 
 --[=[
 	@within Signal
+
+	@method Once
 	@param callback Connectioncallback
 	@return SignalConnection
 
@@ -312,6 +323,14 @@ function Signal.Once(self: _Signal, callback: (...any) -> (...any))
 	return connection
 end
 
+--[=[
+	@within Signal
+
+	@method GetConnections
+	@return {Connection}
+
+	Gets all connections from the signal.
+]=]
 function Signal.GetConnections(self: _Signal)
 	local items: {Connection} = {}
 	local item = self._handlerListHead
@@ -328,6 +347,9 @@ end
 -- reference to the head handler.
 --[=[
 	@within Signal
+
+	@method DisconnectAll
+
 	Disconnects all connections from the signal.
 	```lua
 	signal:DisconnectAll()
@@ -352,6 +374,8 @@ end
 -- over by Roblox scheduling, meaning we have to make a new coroutine runner.
 --[=[
 	@within Signal
+
+	@method Fire
 	@param ... any
 
 	Fire the signal, which will call all of the connected functions with the given arguments.
@@ -381,6 +405,8 @@ end
 
 --[=[
 	@within Signal
+
+	@method FireDeferred
 	@param ... any
 
 	Same as `Fire`, but uses `task.defer` internally & doesn't take advantage of thread reuse.
@@ -399,6 +425,8 @@ end
 
 --[=[
 	@within Signal
+
+	@method Wait
 	@return ... any
 	@yields
 
@@ -434,6 +462,9 @@ end
 
 --[=[
 	@within Signal
+
+	@method Destroy
+
 	Cleans up the signal.
 
 	Technically, this is only necessary if the signal is created using
