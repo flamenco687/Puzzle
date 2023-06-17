@@ -15,3 +15,6 @@ package-lock.json
 
 # Test file used for quick troubleshooting
 tests/Test.*
+
+# Moonwave
+build
