@@ -27,19 +27,24 @@ local Signal = require(script.Signal)
 
 	@prop None None
 
-	None is a unique symbol that replaces `nil` values in components. Some components may be used just as tags, with `data == nil`, but
-	missing components are also internally shown as `nil`. None is used as a marker value in these cases.
+	**`None`** is a unique symbol that replaces `nil` values in components. Components can have `data == nil`, but components that
+	do not exist are also internally shown as `nil`. **`None`** is used as a marker value in these cases.
 
-	Since it is a unique table, `None` represents `nil` always and anywhere. If working with [World:Get], expected `nil` component values
-	will appear as `None`.
+	If working with [`World:Get`](World#Get), expected `nil` component values will appear as **`None`**.
 
 	:::caution
 	```lua
-	local function ValueShouldBeNil(componentValue: Puzzle.None)
-		if componentValue then
-			-- Normally, this conditional would have failed but None is a positive value
-			print("The component value is not nil but None!")
-		end
+	local IsPink: Puzzle.Assembler<nil> = Assembler "IsPink"
+	-- Instead of using a false boolean, not having the component implies that it is not pink
+
+	local id = world:Spawn(
+		IsPink() -- Data is nil, which is internally replaced by None
+	)
+
+	local IsPink: Puzzle.None = world:Get(id, IsPink)
+
+	if IsPink then
+		print("Although originally nil, IsPink acts like a true statement since it refers to None")
 	end
 	```
 	:::
@@ -53,19 +58,20 @@ local Signal = require(script.Signal)
 
 	---
 
-	All types used in Puzzle are exported for use in other modules which also re-export them, making it possible to use types both from this
-	module and from the required module. Scripts of the library modules are also exposed for them to be required.
-
-	This is a recommended structure for systems that run Puzzle:
+	Puzzle exports the scripts of the library modules for them to be required:
 
 	```lua
 	local Puzzle = require(Path.To.Puzzle)
 
-	-- Note that returned modules by Puzzle are given as to-be required scripts
 	local Assembler = require(Puzzle.Assembler)
 	local World = require(Puzzle.World)
+	```
 
-	local Assembler: Puzzle.Assembler<Color3> = Assembler "Color"
+	Although each class exports its types, Puzzle does it too for all the library types.
+
+	```lua
+	local Puzzle = require(Path.To.Puzzle)
+	local World = require(Puzzle.World)
 
 	-- If dealing with argument or variable types, use Puzzle.Type preferably
 	local function PuzzleWorld(world: Puzzle.World) end
@@ -151,6 +157,44 @@ type Storage = {
 	@within World
 
 	@type DestroyProcedures {[string]: (object: any, world: World?) -> ()}
+
+	Determines how different component values are handled when destroyed (setting a new value, removing a component, despawning
+	an entity...). Default procedures:
+
+	```lua
+	local function DestroyTable(object: {[any]: any}, world: _World)
+		if type(object.Destroy) == "function" then
+			object:Destroy()
+		elseif type(object.Disconnect) == "function" then
+			object:Disconnect()
+		else
+			for _, child in object do
+				world:_Destroy(child)
+			end
+			setmetatable(object, nil)
+		end
+	end
+
+	{
+		["table"] = DestroyTable,
+
+		["thread"] = function(object: thread)
+			task.cancel(object)
+		end,
+
+		["function"] = function(object: (...any) -> ...any)
+			object()
+		end,
+
+		["Instance"] = function(object: Instance)
+			object:Destroy()
+		end,
+
+		["RBXScriptConnection"] = function(object: RBXScriptConnection)
+			object:Disconnect()
+		end
+	}
+	```
 ]=]
 export type DestroyProcedures = {
 	[string]: (object: any, world: _World?) -> ()
@@ -166,7 +210,6 @@ export type DestroyProcedures = {
 
 --[=[
 	@within World
-	@readonly
 	@private
 
 	@prop _storage Types.Storage
@@ -174,7 +217,6 @@ export type DestroyProcedures = {
 
 --[=[
 	@within World
-	@readonly
 	@private
 
 	@prop _missing {true?}
@@ -263,12 +305,12 @@ export type Component<T> = {
 
     @tag Assert
 
-    Checks if the given value is a component. Additionally, check if the component data is a table by passing the second argument.
-
     @function Component
     @param value any
     @param dataIsTable boolean?
     @return boolean
+
+    Checks if the given value is a component. Additionally, check if the component data is a table by passing the second argument.
 ]=]
 function Types.Component(value: any, dataIsTable: boolean?): boolean
 	if type(value) == "table" and (if not dataIsTable then value.data ~= nil else type(value.data) == "table") and type(value.name) == "string" then
@@ -299,11 +341,11 @@ export type _Assembler<T> = {
 
     @tag Assert
 
-    Checks if the given value is an assembler.
-
     @function Assembler
     @param assembler any
     @return boolean
+
+    Checks if the given value is an assembler.
 ]=]
 function Types.Assembler(value: any): boolean
 	if getmetatable(value) and getmetatable(value)._isAssembler then return true else return false end
