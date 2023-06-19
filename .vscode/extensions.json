@@ -1,8 +1,6 @@
 {
 	"recommendations": [
-		"pkief.material-icon-theme",
-
-		"nightrains.robloxlsp",
-		"evaera.vscode-rojo"
+		"roblox-ts.vscode-roblox-ts",
+		"dbaeumer.vscode-eslint"
 	]
 }

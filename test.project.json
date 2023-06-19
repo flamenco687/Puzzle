@@ -7,8 +7,6 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
 
-      "$path": "Packages",
-
       "Puzzle": {
         "$path": "src"
       }

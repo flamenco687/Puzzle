@@ -1,9 +1,21 @@
 {
+	"files.eol": "\n",
+
 	"material-icon-theme.folders.associations": {
 		"tests/testez": "tools"
 	},
 
-	"files.eol": "\n",
+	"eslint.run": "onType",
+	"eslint.format.enable": true,
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"[typescript]": {
+		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+		"editor.formatOnSave": true
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+		"editor.formatOnSave": true
+	},
 
 	"robloxLsp.workspace.rojoProjectFile": "test",
 	"testez-companion.runTestsOnSave": true,
