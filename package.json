@@ -3,35 +3,30 @@
   "version": "1.0.0",
   "description": "",
 
-  "keywords": [],
-  "repository": "https://github.com/flamenco687/Puzzle",
   "homepage": "https://flamenco687.github.io/Puzzle/",
+  "repository": "https://github.com/flamenco687/Puzzle",
+  "bugs": {
+    "url": "https://github.com/flamenco687/Puzzle/issues"
+  },
 
+  "keywords": [],
   "author": "flamenco687",
   "license": "MIT",
-
-  "publishConfig": {
-    "access": "public"
-  },
 
   "main": "src/init.lua",
 
   "directories": {
-    "lib": "src",
-    "test": "tests"
+    "lib": "src"
   },
-
   "files": [
     "src",
     "!**/*.tsbuildinfo"
   ],
-
   "scripts": {
     "build": "rbxtsc",
     "watch": "rbxtsc -w",
     "prepublishOnly": "npm run build"
   },
-
   "types": "src/index.d.ts",
 
   "dependencies": {
