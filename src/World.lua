@@ -4,7 +4,7 @@
 
 local Signal = require(script.Parent.Signal)
 
-local Types = require(script.Parent)
+local Types = require(script.Parent.Types)
 
 --> QueryResult
 
@@ -87,7 +87,7 @@ local function SearchQueryResultId(currentId: string, assemblers: {Types.Assembl
 	local queryResultId = currentId
 
 	for index, assembler in assemblers do
-		if not Types.Assembler(assembler) then error("SearchQueryResultId() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 1) end
+		if not Types.IsAssembler(assembler) then error("SearchQueryResultId() -> Argument #"..1 + index.." expected assembler, got "..typeof(assembler), 1) end
 		queryResultId = queryResultId .. tostring(assembler)
 	end
 
@@ -329,7 +329,7 @@ function World.SpawnAt(self: _World, id: number, ...: Types.Component<any>): num
 	local components: {Types.Component<any>} = {...}
 
 	for index, component in components do
-		if not Types.Component(component) then error("SpawnAt() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
+		if not Types.IsComponent(component) then error("SpawnAt() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
 		self:_Set(component.name, id, component.data)
 	end
 
@@ -434,7 +434,7 @@ function World.Get(self: _World, id: number, ...: Types.Assembler<any>?): ...any
 
 	if assemblers then -- Returns a tuple of component data
 		for index, assembler in assemblers :: {Types.Assembler<any>} do
-			if not Types.Assembler(assembler) then error("Get() -> Argument #".. 1 + index .." expected assembler, got " .. typeof(assembler), 2) end
+			if not Types.IsAssembler(assembler) then error("Get() -> Argument #".. 1 + index .." expected assembler, got " .. typeof(assembler), 2) end
 			if not self._storage[tostring(assembler)] then return nil :: any end
 
 			local data = self._storage[tostring(assembler)][id];
@@ -466,7 +466,7 @@ function World.Set(self: _World, id: number, ...: Types.Component<any>): ()
 	local components: {Types.Component<any>} = {...}
 
 	for index, component in components do
-		if not Types.Component(component) then error("Set() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
+		if not Types.IsComponent(component) then error("Set() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
 		self:_Set(component.name, id, component.data)
 	end
 end
@@ -486,7 +486,7 @@ function World.Update(self: _World, id: number, ...: Types.Component<{[any]: any
 	local components: {Types.Component<{[any]: any}>} = {...}
 
 	for index, component in components do
-		if not Types.Component(component, true) then error("Set() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
+		if not Types.IsComponent(component, true) then error("Set() -> Argument #".. 1 + index .." expected component, got " .. typeof(component), 2) end
 
 		if self._storage[component.name] and type(self._storage[component.name][id]) == "table" then
 			local oldValue = self._storage[component.name][id]
@@ -518,7 +518,7 @@ function World.Remove(self: _World, id: number, ...: Types.Assembler<any>): ()
 	local assemblers: {Types.Assembler<any>} = {...}
 
 	for index, assembler in assemblers do
-		if not Types.Assembler(assembler) then error("Remove() -> Argument #".. 1 + index .." expected assembler, got " .. typeof(assembler), 2) end
+		if not Types.IsAssembler(assembler) then error("Remove() -> Argument #".. 1 + index .." expected assembler, got " .. typeof(assembler), 2) end
 		if not self._storage[tostring(assembler)] then continue end
 		self:_Set(tostring(assembler), id, nil)
 	end

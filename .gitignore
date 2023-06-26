@@ -1,20 +1,28 @@
-# Roblox project place file
-Puzzle.rbxlx
+### Roblox ###
 
-# Roblox Studio lock files
+# Project place files
+Puzzle.rbxlx
 *.rbxlx.lock
 *.rbxl.lock
 
-# Wally packages
+# Test file used for quick troubleshooting
+tests/Test.*
+
+# roblox-ts
+rbxts-puzzle-*.*.*.tgz
+*.tsbuildinfo
+
+### Packages ###
+
+# Wally
 Packages
 wally.lock
 
-# Node modules
+# Node (npm)
 node_modules
 package-lock.json
 
-# Test file used for quick troubleshooting
-tests/Test.*
+### Documentation ###
 
 # Moonwave
 build

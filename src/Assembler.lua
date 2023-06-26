@@ -2,7 +2,7 @@
 
 --> Modules
 
-local Types = require(script.Parent)
+local Types = require(script.Parent.Types)
 
 local None = require(script.Parent.None)
 
