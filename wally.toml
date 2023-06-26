@@ -11,7 +11,7 @@ license = "MIT"
 authors = ["flamenco687"]
 
 exclude = ["**"]
-include = ["src", "src/*.lua", "default.project.json", "wally.toml"]
+include = ["lib", "lib/*.lua", "default.project.json", "wally.toml"]
 
 realm = "shared"
 registry = "https://github.com/UpliftGames/wally-index"
