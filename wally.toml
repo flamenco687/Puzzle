@@ -1,17 +1,13 @@
 [package]
 name = "flamenco687/puzzle"
-
-description = """
-ECS library for Roblox. \
-Homepage: https://flamenco687.github.io/Puzzle/
-"""
-
 version = "0.2.0"
-license = "MIT"
+description = "ECS library for Roblox. Homepage: https://flamenco687.github.io/Puzzle/"
+
 authors = ["flamenco687"]
+license = "MIT"
 
 exclude = ["**"]
-include = ["src", "src/*.lua", "default.project.json", "wally.toml"]
+include = ["lib", "lib/*.lua", "default.project.json", "wally.toml"]
 
 realm = "shared"
 registry = "https://github.com/UpliftGames/wally-index"

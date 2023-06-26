@@ -6,23 +6,20 @@ Puzzle.rbxlx
 *.rbxl.lock
 
 # Test file used for quick troubleshooting
-tests/Test.*
+/tests/Test.*
 
 # roblox-ts
 rbxts-puzzle-*.*.*.tgz
-*.tsbuildinfo
 
 #-- Packages --#
 
 # Wally
-Packages
+/Packages
 wally.lock
 
 # Node (npm)
-node_modules
+/node_modules
 package-lock.json
 
 #-- Documentation --#
-
-# Moonwave
-build
+/build

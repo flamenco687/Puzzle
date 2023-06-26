@@ -1,6 +1,5 @@
 {
   "name": "Puzzle",
-
   "tree": {
     "$className": "DataModel",
 
@@ -8,7 +7,7 @@
       "$className": "ReplicatedStorage",
 
       "Puzzle": {
-        "$path": "src"
+        "$path": "lib"
       }
     },
 

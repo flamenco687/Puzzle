@@ -1,6 +1,6 @@
 {
   "name": "puzzle",
   "tree": {
-    "$path": "src"
+    "$path": "lib"
   }
 }
