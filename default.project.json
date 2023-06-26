@@ -1,6 +1,5 @@
 {
   "name": "puzzle",
-
   "tree": {
     "$path": "src"
   }
