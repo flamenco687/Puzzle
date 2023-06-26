@@ -1,4 +1,4 @@
-### Roblox ###
+#-- Roblox --#
 
 # Project place files
 Puzzle.rbxlx
@@ -12,7 +12,7 @@ tests/Test.*
 rbxts-puzzle-*.*.*.tgz
 *.tsbuildinfo
 
-### Packages ###
+#-- Packages --#
 
 # Wally
 Packages
@@ -22,7 +22,7 @@ wally.lock
 node_modules
 package-lock.json
 
-### Documentation ###
+#-- Documentation --#
 
 # Moonwave
 build
