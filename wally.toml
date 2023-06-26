@@ -2,12 +2,11 @@
 name = "flamenco687/puzzle"
 
 description = """
-ECS Library for Roblox. \
-Heavily inspired by Matter. \
-GitHub Repository: https://github.com/flamenco687/Puzzle.
+ECS library for Roblox. \
+Homepage: https://flamenco687.github.io/Puzzle/
 """
 
-version = "0.1.0"
+version = "0.2.0"
 license = "MIT"
 authors = ["flamenco687"]
 

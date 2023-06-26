@@ -1,7 +1,7 @@
 {
   "name": "@rbxts/puzzle",
-  "version": "1.0.0",
-  "description": "",
+  "version": "0.2.0",
+  "description": "ECS library for Roblox",
 
   "homepage": "https://flamenco687.github.io/Puzzle/",
   "repository": "https://github.com/flamenco687/Puzzle",
@@ -9,7 +9,7 @@
     "url": "https://github.com/flamenco687/Puzzle/issues"
   },
 
-  "keywords": [],
+  "keywords": ["ECS", "Roblox"],
   "author": "flamenco687",
   "license": "MIT",
 
