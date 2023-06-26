@@ -28,9 +28,9 @@ export type _Assembler<T> = Types._Assembler<T>
 
 	---
 
-	Assemblers act as a function that takes an input data and outputs a [Types.Component] containing that data.
+	Assemblers act as a function that takes an input data and outputs a [Component](Types#Component) containing that data.
 	These components can then be used by the [World]. Assemblers can also be useful if the component name is needed.
-	because it inherits from the assembler and can be retrieved with `tostring(assembler)`.
+	because it inherits from the assembler and can be retrieved with [`tostring(assembler)`](Assembler#__tostring).
 
 	```lua
 	local Position: Puzzle.Assembler<Vector3> = Assembler "Position"
@@ -75,20 +75,17 @@ end
 
 	@tag Constructor
 
+	@function Constructor
+	@param name string
+	@return Assembler
+
 	:::info Puzzle constructors are special
 	Constructors are returned by the module and called like *local functions* instead of acting like class functions.
 
 	```lua
-	local Assembler = require(Puzzle.Assembler)
 	local assembler = Assembler "Name"
 	```
 	:::
-
-	Constructs a new Assembler.
-
-	@function Constructor
-	@param name string
-	@return Assembler
 ]=]
 local function Constructor<T>(name: string): Assembler<T>
 	if type(name) ~= "string" then error("New Assembler -> Argument #1 expected string, got "..typeof(name), 2) end
