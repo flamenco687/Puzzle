@@ -10,6 +10,8 @@ tests/Test.*
 
 # roblox-ts
 rbxts-puzzle-*.*.*.tgz
+out
+include
 *.tsbuildinfo
 
 #-- Packages --#
