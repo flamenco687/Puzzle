@@ -1,6 +1,13 @@
 {
 	"recommendations": [
+		"pkief.material-icon-theme",
+
+		"dbaeumer.vscode-eslint",
+		"esbenp.prettier-vscode",
+
+		"evaera.vscode-rojo",
+		"nightrains.robloxlsp",
 		"roblox-ts.vscode-roblox-ts",
-		"dbaeumer.vscode-eslint"
+		"tacheometrist.testez-companion"
 	]
 }
