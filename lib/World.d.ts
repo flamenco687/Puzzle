@@ -4,6 +4,7 @@ interface World {
 	// eslint-disable-next-line @typescript-eslint/no-misused-new
 	new (destroyProcedures?: DestroyProcedures): World;
 	// Methods
+	Size(): number;
 	Has(id: number): boolean;
 	OnChange(idOrassembler: number | assembler<unknown>): Signal;
 	SpawnAt(id: number, ...components: LuaTuple<[Component<unknown>]>): number;
