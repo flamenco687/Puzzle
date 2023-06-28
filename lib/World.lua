@@ -260,6 +260,18 @@ end
 --[=[
 	@within World
 
+	@method Size
+	@return number
+
+	Returns the amount of entities of the World.
+]=]
+function World.Size(self: _World): number
+	return self._size
+end
+
+--[=[
+	@within World
+
 	@method Query
 	@param ... Assembler<any>
 	@return QueryResult
